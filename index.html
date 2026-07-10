@@ -10,13 +10,14 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
       integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
 <style>
-/* ─── ALL STYLES (same as previous) ─── */
+/* ─── ALL STYLES (same as before, with added reserve styles) ─── */
 :root{
   --bg:#f8f9fb; --bg2:#ffffff; --panel:#ffffff; --panel2:#f1f3f9;
   --line:#f1f3f9; --line2:#1e293b; --line3:#cbd5e1;
   --text:#1e293b; --text2:#64748b; --text3:#94a3b8;
   --acc:#2563eb; --acc2:#1d4ed8; --acc-bg:#eff6ff; --acc-glow:rgba(37,99,235,.12);
   --warn:#d97706; --wbg:rgba(245,158,11,.12); --danger:#dc2626; --dbg:rgba(239,68,68,.12);
+  --reserve:#8b5cf6; --reserve-bg:#f5f3ff;
   --t1:#dc2626; --t2:#d97706; --t3:#2563eb; --t4:#94a3b8;
   --speed:.4s;
 }
@@ -25,6 +26,7 @@ html[data-mode="mil"]{
   --line:#fef3c7; --line2:#fde68a; --line3:#f59e0b;
   --text:#1e293b; --text2:#92400e; --text3:#a16207;
   --acc:#ffaa00; --acc2:#cc8800; --acc-bg:#fefce8; --acc-glow:rgba(255,170,0,.18);
+  --reserve:#8b5cf6; --reserve-bg:#f5f3ff;
   --t1:#dc2626; --t2:#d97706; --t3:#ffaa00; --t4:#a16207;
 }
 *{box-sizing:border-box; margin:0; padding:0;}
@@ -34,6 +36,7 @@ body{
   transition:background var(--speed),color var(--speed);
   min-height:100vh;
 }
+/* ─── STATUS BAR ─── */
 .sbar{display:flex; align-items:center; gap:18px; background:var(--bg2); border-bottom:1px solid var(--line); padding:6px 24px; font-size:11.5px; overflow:hidden; white-space:nowrap;}
 .sbar-id{color:var(--acc); font-weight:700; display:flex; align-items:center; gap:8px; flex:none;}
 .sbar-id::before{content:''; width:7px; height:7px; border-radius:50%; background:var(--acc); box-shadow:0 0 8px var(--acc); animation:blink 1.4s steps(2) infinite; display:block;}
@@ -94,6 +97,8 @@ select:focus,input:focus{border-color:var(--acc);}
 .btn-warn:hover{background:var(--warn); color:var(--bg);}
 .btn-solid{background:var(--acc); color:var(--bg); border-color:var(--acc); font-weight:700;}
 .btn-solid:hover{box-shadow:0 0 20px var(--acc-glow);}
+.btn-reserve{background:var(--reserve-bg); color:var(--reserve); border-color:var(--reserve);}
+.btn-reserve:hover{background:var(--reserve); color:var(--bg);}
 .result{margin-top:12px; font-size:12.5px; min-height:20px; padding:0 2px;}
 .ok{color:var(--acc);} .bad{color:var(--danger);} .muted{color:var(--text3);}
 .pending{border-radius:10px;border:1px solid var(--acc2); background:var(--acc-bg); padding:12px 14px; margin-top:12px; box-shadow:0 0 20px var(--acc-glow) inset;}
@@ -171,11 +176,13 @@ select:focus,input:focus{border-color:var(--acc);}
 .bed-tile .bed-iot{font-size:9px;color:var(--text3);margin-top:4px;border-top:1px solid var(--line);padding-top:4px;}
 .bed-tile .bed-mismatch{position:absolute;top:-6px;right:-6px;width:18px;height:18px;border-radius:50%;background:var(--danger);color:white;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;box-shadow:0 0 8px rgba(220,38,38,0.4);animation:pulse 1.5s ease-in-out infinite;}
 .bed-tile .bed-last-change{font-size:9px;color:var(--text3);margin-top:4px;}
+.bed-tile .bed-reserve-badge{position:absolute;bottom:4px;left:4px;font-size:8px;background:var(--reserve);color:white;padding:2px 6px;border-radius:3px;font-weight:600;}
 .bed-tile.bed-occupied{border-color:#dc2626;background:#fef2f2;}
 .bed-tile.bed-unclean{border-color:#d97706;background:#fffbeb;}
 .bed-tile.bed-cleaning{border-color:#fbbf24;background:#fefce8;}
 .bed-tile.bed-available{border-color:#2563eb;background:#eff6ff;}
 .bed-tile.bed-assigned{border-color:#8b5cf6;background:#f5f3ff;}
+.bed-tile.bed-reserved{border-color:#8b5cf6;background:#f5f3ff;border-width:2.5px;}
 .bed-tile.bed-out{border-color:#94a3b8;background:#f8fafc;}
 .demand-bar{height:30px; background:var(--bg); border:1px solid var(--line); border-radius:4px; overflow:hidden; position:relative; margin:4px 0;}
 .demand-bar .fill{height:100%; transition:width .5s ease; position:absolute; top:0; left:0;}
@@ -184,6 +191,8 @@ select:focus,input:focus{border-color:var(--acc);}
 .demand-summary .item{text-align:center; padding:8px; background:var(--panel2); border-radius:6px; border:1px solid var(--line);}
 .demand-summary .item .num{font-size:28px; font-weight:700;}
 .demand-summary .item .lbl{font-size:10px; color:var(--text3); text-transform:uppercase; letter-spacing:.05em;}
+.reserve-queue-item{padding:6px 10px; border-bottom:1px solid var(--line); font-size:12px; display:flex; justify-content:space-between; align-items:center;}
+.reserve-queue-item .priority{font-weight:700; padding:2px 8px; border-radius:4px; font-size:10px;}
 @media(max-width:768px){
   .sbar{padding:5px 12px; gap:10px; font-size:10px;}
   .sbar-pills{display:none;}
@@ -305,7 +314,47 @@ select:focus,input:focus{border-color:var(--acc);}
   var SYSTEM_AVAILABLE = 10;
   var TOTAL_DEMAND = 18;
 
-  // ─── PATIENT DIAGNOSIS DATA (18 patients) ───
+  // ─── RESERVATION QUEUE ───
+  var reservationQueue = [];
+
+  function addToReservationQueue(patientId, priority) {
+    // priority: 'T1' = highest, 'T2', 'T3', 'T4'
+    var entry = { patientId: patientId, priority: priority, addedAt: new Date() };
+    // Sort by priority (T1 > T2 > T3 > T4) and then by time
+    var priorityOrder = { 'T1': 1, 'T2': 2, 'T3': 3, 'T4': 4 };
+    reservationQueue.push(entry);
+    reservationQueue.sort(function(a, b) {
+      if (priorityOrder[a.priority] !== priorityOrder[b.priority]) {
+        return priorityOrder[a.priority] - priorityOrder[b.priority];
+      }
+      return a.addedAt - b.addedAt;
+    });
+    updateReservationDisplay();
+  }
+
+  function getNextFromReservationQueue() {
+    if (reservationQueue.length === 0) return null;
+    return reservationQueue.shift();
+  }
+
+  function updateReservationDisplay() {
+    var container = document.getElementById('reservation-queue-display');
+    if (!container) return;
+    if (reservationQueue.length === 0) {
+      container.innerHTML = '<div class="empty-state">No patients waiting for bed reservation.</div>';
+      return;
+    }
+    var priorityColors = { 'T1': '#dc2626', 'T2': '#d97706', 'T3': '#2563eb', 'T4': '#94a3b8' };
+    container.innerHTML = reservationQueue.map(function(entry) {
+      return '<div class="reserve-queue-item">'+
+        '<span><b>'+entry.patientId+'</b></span>'+
+        '<span class="priority" style="background:'+(priorityColors[entry.priority]||'#94a3b8')+'20;color:'+(priorityColors[entry.priority]||'#94a3b8')+';">'+entry.priority+'</span>'+
+        '<span style="color:var(--text3);font-size:10px;">'+entry.addedAt.toLocaleTimeString()+'</span>'+
+        '</div>';
+    }).join('');
+  }
+
+  // ─── DIAGNOSIS DATA ───
   var diagnosisData = [
     { id: 'PT-0001', gender: 'Male', age: 72, diagnosis: 'Heart Failure', severity: 'Severe', triage: 'T1', admissionDate: '2024-01-12', los: 5 },
     { id: 'PT-0002', gender: 'Female', age: 65, diagnosis: 'COPD', severity: 'Moderate', triage: 'T2', admissionDate: '2024-01-13', los: 3 },
@@ -327,28 +376,7 @@ select:focus,input:focus{border-color:var(--acc);}
     { id: 'PT-0018', gender: 'Female', age: 68, diagnosis: 'Hip Fracture', severity: 'Severe', triage: 'T1', admissionDate: '2024-01-21', los: 7 }
   ];
 
-  function getDiagnosisStats() {
-    var genders = { Male: 0, Female: 0 };
-    var ageGroups = { '0-20':0, '21-40':0, '41-60':0, '61-80':0, '80+':0 };
-    var diagnosisCount = {};
-    var triageCount = { T1:0, T2:0, T3:0, T4:0 };
-    var losTotal = 0;
-
-    diagnosisData.forEach(function(p) {
-      genders[p.gender] = (genders[p.gender] || 0) + 1;
-      var age = p.age;
-      if (age <= 20) ageGroups['0-20']++;
-      else if (age <= 40) ageGroups['21-40']++;
-      else if (age <= 60) ageGroups['41-60']++;
-      else if (age <= 80) ageGroups['61-80']++;
-      else ageGroups['80+']++;
-      diagnosisCount[p.diagnosis] = (diagnosisCount[p.diagnosis] || 0) + 1;
-      triageCount[p.triage] = (triageCount[p.triage] || 0) + 1;
-      losTotal += p.los;
-    });
-    var avgLos = diagnosisData.length ? Math.round(losTotal / diagnosisData.length) : 0;
-    return { genders: genders, ageGroups: ageGroups, diagnosisCount: diagnosisCount, triageCount: triageCount, avgLos: avgLos, total: diagnosisData.length };
-  }
+  function getDiagnosisStats() { /* same as before */ var genders = { Male: 0, Female: 0 }; var ageGroups = { '0-20':0, '21-40':0, '41-60':0, '61-80':0, '80+':0 }; var diagnosisCount = {}; var triageCount = { T1:0, T2:0, T3:0, T4:0 }; var losTotal = 0; diagnosisData.forEach(function(p) { genders[p.gender] = (genders[p.gender] || 0) + 1; var age = p.age; if (age <= 20) ageGroups['0-20']++; else if (age <= 40) ageGroups['21-40']++; else if (age <= 60) ageGroups['41-60']++; else if (age <= 80) ageGroups['61-80']++; else ageGroups['80+']++; diagnosisCount[p.diagnosis] = (diagnosisCount[p.diagnosis] || 0) + 1; triageCount[p.triage] = (triageCount[p.triage] || 0) + 1; losTotal += p.los; }); var avgLos = diagnosisData.length ? Math.round(losTotal / diagnosisData.length) : 0; return { genders: genders, ageGroups: ageGroups, diagnosisCount: diagnosisCount, triageCount: triageCount, avgLos: avgLos, total: diagnosisData.length }; }
 
   // ─── CORE DATA ───
   var STAGES = ['Logged','En route','Arrived','In treatment','Cleared'];
@@ -363,7 +391,7 @@ select:focus,input:focus{border-color:var(--acc);}
   var schemes = {
     civ: {
       sub: 'HOSPITAL — SURGE NETWORK', sbid: 'MEDCOM-X // HOSPITAL NET', sbup: 'TI-MSGR', channel: 'TI-Messenger', cleared: 'Discharged', pfx: 'PT',
-      flow: 'KLINIKUM MITTE - 18 BEDS - 10 VISIBLE - 8 HIDDEN',
+      flow: 'KLINIKUM MITTE - 18 BEDS - 10 VISIBLE - 8 HIDDEN - AUTO-RESERVE ACTIVE',
       tri: [['T1','Immediate','#dc2626'],['T2','Urgent','#d97706'],['T3','Delayed','#2563eb'],['T4','Expectant','#94a3b8']],
       facs: [{ n:'Klinikum Mitte', t:'Level I trauma', role:'Trauma lead', beds:TOTAL_CAPACITY, free:SYSTEM_AVAILABLE, icu:4, icuFree:2, vent:8, ventFree:3, surg:true, lat:52.524, lng:13.388, wards:wardData }],
       inv: [
@@ -402,6 +430,7 @@ select:focus,input:focus{border-color:var(--acc);}
     UNCLEAN: { label: 'UNCLEAN', color: '#d97706' },
     CLEANING: { label: 'CLEANING', color: '#fbbf24' },
     AVAILABLE: { label: 'AVAILABLE', color: '#2563eb' },
+    RESERVED: { label: 'RESERVED', color: '#8b5cf6' },
     ASSIGNED: { label: 'ASSIGNED', color: '#8b5cf6' },
     OUT_OF_SERVICE: { label: 'OUT OF SERVICE', color: '#94a3b8' }
   };
@@ -429,12 +458,19 @@ select:focus,input:focus{border-color:var(--acc);}
           state: state,
           displayState: state,
           patientId: patientId,
+          reservedFor: null, // patient ID this bed is reserved for
           lastChange: new Date(),
           history: [{ state: state, timestamp: new Date(), source: 'system' }]
         });
       }
     });
+    // Add some reserved beds for demo
     beds.forEach(function(bed, i) {
+      if (i % 5 === 0 && bed.state === 'AVAILABLE') {
+        bed.state = 'RESERVED';
+        bed.reservedFor = 'PT-' + String(Math.floor(1000 + Math.random() * 9000));
+        bed.history.push({ state: 'RESERVED', timestamp: new Date(), source: 'system' });
+      }
       if (i % 4 === 0 && bed.state === 'OCCUPIED') {
         bed.displayState = 'AVAILABLE';
         bed.history.push({ state: 'AVAILABLE', timestamp: new Date(), source: 'iot' });
@@ -444,6 +480,9 @@ select:focus,input:focus{border-color:var(--acc);}
         bed.history.push({ state: 'OCCUPIED', timestamp: new Date(), source: 'iot' });
       }
     });
+    // Add some patients to reservation queue
+    addToReservationQueue('PT-0012', 'T3');
+    addToReservationQueue('PT-0015', 'T3');
     bedTimeline.push({ timestamp: new Date(), message: 'System initialized with ' + beds.length + ' beds' });
   }
   generateBeds();
@@ -451,9 +490,42 @@ select:focus,input:focus{border-color:var(--acc);}
   function getTotalDemand() { return TOTAL_DEMAND; }
   function getAvailableCount() { return SYSTEM_AVAILABLE; }
   function getOccupiedCount() { return beds.filter(function(b){ return b.state === 'OCCUPIED' || b.state === 'ASSIGNED'; }).length; }
+  function getReservedCount() { return beds.filter(function(b){ return b.state === 'RESERVED'; }).length; }
   function getStateConfig(state) { return BED_STATES[state] || BED_STATES.AVAILABLE; }
   function hasMismatch(bed) { return bed.state !== bed.displayState; }
   function countMismatches() { var c=0; beds.forEach(function(b){ if(hasMismatch(b)) c++; }); return c; }
+
+  // ─── AUTO-RESERVE LOGIC ───
+  function tryAutoReserveBed(bedId) {
+    var bed = beds.find(function(b){ return b.id === bedId; });
+    if (!bed) return false;
+    // Only reserve if bed is AVAILABLE and there are patients in queue
+    if (bed.state !== 'AVAILABLE') return false;
+    if (reservationQueue.length === 0) return false;
+    var nextPatient = getNextFromReservationQueue();
+    if (!nextPatient) return false;
+    bed.state = 'RESERVED';
+    bed.reservedFor = nextPatient.patientId;
+    bed.lastChange = new Date();
+    bed.history.push({ state: 'RESERVED', timestamp: new Date(), source: 'auto-reserve' });
+    updateBedTimeline('AUTO-RESERVED: '+bed.id+' reserved for '+nextPatient.patientId+' ('+nextPatient.priority+')', bed.id);
+    updateReservationDisplay();
+    renderBedGrid();
+    updateBedMetrics();
+    updateBedDropdowns();
+    updateBedFlowFromAdmin();
+    if (curTab === 'bed') renderContent();
+    return true;
+  }
+
+  // When a bed becomes AVAILABLE via IoT or admin, try to auto-reserve it
+  function attemptAutoReserveOnAvailable(bedId) {
+    var bed = beds.find(function(b){ return b.id === bedId; });
+    if (!bed) return;
+    if (bed.state === 'AVAILABLE') {
+      tryAutoReserveBed(bedId);
+    }
+  }
 
   // ─── CORE FUNCTIONS ───
   var $ = function(id){ return document.getElementById(id); };
@@ -608,9 +680,11 @@ select:focus,input:focus{border-color:var(--acc);}
     var totalDemand = getTotalDemand();
     var occupied = getOccupiedCount();
     var available = getAvailableCount();
+    var reserved = getReservedCount();
     $('metrics').innerHTML =
       mc('CASUALTIES',active.length,'')+
       mc('OCCUPIED',occupied,'')+
+      mc('RESERVED',reserved,reserved>0?'warn':'')+
       mc('DEMAND',totalDemand,totalDemand>0?'warn':'')+
       mc('AVAILABLE BEDS',available,available<totalDemand?'danger':'')+
       mc('ALERTS SUPP.',suppressed,'')+
@@ -618,21 +692,272 @@ select:focus,input:focus{border-color:var(--acc);}
       mc('RESILIENCE',rs+'',rsClass);
   }
 
-  // ─── BED ADMIN FUNCTIONS (abbreviated for brevity) ───
-  function renderBedGrid() { /* same as before */ var grid = document.getElementById('bed-grid'); if (!grid) return; grid.innerHTML = beds.map(function(bed) { var stateConfig = getStateConfig(bed.state); var displayConfig = getStateConfig(bed.displayState); var isMismatch = hasMismatch(bed); var timeSince = Math.floor((new Date() - new Date(bed.lastChange)) / 1000 / 60); var timeStr = timeSince < 1 ? 'just now' : timeSince + 'm ago'; var bedClass = 'bed-tile'; if (bed.state === 'OCCUPIED') bedClass += ' bed-occupied'; else if (bed.state === 'UNCLEAN') bedClass += ' bed-unclean'; else if (bed.state === 'CLEANING') bedClass += ' bed-cleaning'; else if (bed.state === 'AVAILABLE') bedClass += ' bed-available'; else if (bed.state === 'ASSIGNED') bedClass += ' bed-assigned'; else if (bed.state === 'OUT_OF_SERVICE') bedClass += ' bed-out'; var wardLabel = bed.ward ? ' <span style="font-size:9px;color:var(--text3);">('+bed.ward+')</span>' : ''; return '<div class="'+bedClass+'" style="border-color: '+(isMismatch ? 'var(--danger)' : stateConfig.color)+';">'+(isMismatch ? '<div class="bed-mismatch">!</div>' : '')+'<div><div class="bed-id">'+bed.id+wardLabel+'</div><div style="font-size:10px; color:var(--text3);">'+bed.facility+'</div><div class="bed-status" style="background:'+stateConfig.color+'20; color:'+stateConfig.color+';">'+stateConfig.label+'</div>'+(bed.patientId ? '<div class="bed-patient">Patient: '+bed.patientId+'</div>' : '<div class="bed-patient" style="color:var(--text3);">— empty —</div>')+'</div><div><div class="bed-iot"><span style="color:'+(isMismatch ? 'var(--danger)' : 'var(--acc)')+';">'+(isMismatch ? 'MISMATCH' : 'SYNC')+'</span>'+(isMismatch ? ' - IoT says: '+displayConfig.label : '')+'</div><div class="bed-last-change">Last change: '+timeStr+'</div></div></div>'; }).join(''); updateBedMetrics(); }
-  function updateBedMetrics() { var sysOcc = beds.filter(function(b){ return b.state === 'OCCUPIED'; }).length; var realOcc = beds.filter(function(b){ return b.displayState === 'OCCUPIED'; }).length; var mismatch = countMismatches(); var sysEl = document.getElementById('sys-occupied'); var realEl = document.getElementById('real-occupied'); var mismatchEl = document.getElementById('mismatch-count'); var badgeEl = document.getElementById('mismatch-badge'); var timeEl = document.getElementById('mismatch-time'); if (sysEl) sysEl.textContent = sysOcc; if (realEl) realEl.textContent = realOcc; if (mismatchEl) { mismatchEl.textContent = mismatch; mismatchEl.style.color = mismatch > 0 ? 'var(--danger)' : 'var(--acc)'; } if (badgeEl) { badgeEl.textContent = mismatch; badgeEl.style.color = mismatch > 0 ? 'var(--danger)' : 'var(--acc)'; } if (timeEl) timeEl.textContent = 'Updated: ' + new Date().toLocaleTimeString(); var detailsEl = document.getElementById('mismatch-details'); if (detailsEl) { if (mismatch > 0) { var mismatches = beds.filter(function(b){ return hasMismatch(b); }); detailsEl.style.display = 'block'; detailsEl.innerHTML = mismatches.map(function(b) { return '<div style="display:flex; justify-content:space-between; padding:2px 0; border-bottom:1px solid var(--line);"><span><b>'+b.id+'</b> ('+b.ward+')</span><span>System: '+getStateConfig(b.state).label+' -> IoT: '+getStateConfig(b.displayState).label+'</span></div>'; }).join(''); } else { detailsEl.style.display = 'none'; } } }
-  function updateBedTimeline(message, bedId) { bedTimeline.unshift({ timestamp: new Date(), message: message, bedId: bedId }); if (bedTimeline.length > 100) bedTimeline.pop(); renderBedTimeline(); }
-  function renderBedTimeline() { var container = document.getElementById('timeline-entries'); var countEl = document.getElementById('timeline-count'); if (!container) return; if (countEl) countEl.textContent = bedTimeline.length + ' events'; container.innerHTML = bedTimeline.slice(0, 30).map(function(entry) { var time = entry.timestamp.toLocaleTimeString(); var bedInfo = entry.bedId ? ' ('+entry.bedId+')' : ''; return '<div style="display:flex; gap:10px; padding:4px 0; border-bottom:1px solid var(--line); font-size:12px;"><span style="color:var(--text3); min-width:70px;">'+time+'</span><span style="color:var(--text);">'+entry.message+bedInfo+'</span></div>'; }).join('') || '<div style="color:var(--text3); padding:8px;">No events yet.</div>'; }
-  function simulateIoT(bedId, action) { var bed = beds.find(function(b){ return b.id === bedId; }); if (!bed) { document.getElementById('iot-feedback').textContent = 'Bed not found'; return; } var oldState = bed.displayState; var newState = oldState; var message = ''; switch(action) { case 'discharge': if (oldState === 'OCCUPIED') { newState = 'UNCLEAN'; bed.patientId = null; message = 'DISCHARGE: '+bed.id+' patient left, bed is now UNCLEAN'; } else { message = bed.id+' is not occupied (current: '+getStateConfig(oldState).label+')'; } break; case 'clean': if (oldState === 'UNCLEAN') { newState = 'CLEANING'; message = 'CLEANING: '+bed.id+' cleaning started'; } else { message = bed.id+' is not UNCLEAN (current: '+getStateConfig(oldState).label+')'; } break; case 'available': if (oldState === 'CLEANING' || oldState === 'UNCLEAN') { newState = 'AVAILABLE'; message = 'AVAILABLE: '+bed.id+' is now ready for assignment'; } else { message = bed.id+' cannot be marked available (current: '+getStateConfig(oldState).label+')'; } break; case 'occupy': if (oldState === 'AVAILABLE' || oldState === 'ASSIGNED') { newState = 'OCCUPIED'; bed.patientId = 'PT-'+String(Math.floor(1000 + Math.random() * 9000)); message = 'OCCUPY: '+bed.id+' now occupied by '+bed.patientId; } else { message = bed.id+' cannot be occupied (current: '+getStateConfig(oldState).label+')'; } break; default: message = 'Unknown action'; } if (newState !== oldState) { bed.displayState = newState; bed.lastChange = new Date(); bed.history.push({ state: newState, timestamp: new Date(), source: 'iot' }); updateBedTimeline(message, bed.id); updateBedFlowFromAdmin(); } document.getElementById('iot-feedback').textContent = message; renderBedGrid(); updateBedDropdowns(); if (curTab === 'bed') renderContent(); }
-  function adminAction(bedId, action) { var bed = beds.find(function(b){ return b.id === bedId; }); if (!bed) { document.getElementById('admin-feedback').textContent = 'Bed not found'; return; } var newState = bed.state; var message = ''; switch(action) { case 'assign': newState = 'ASSIGNED'; bed.patientId = 'PT-'+String(Math.floor(1000 + Math.random() * 9000)); message = 'ASSIGNED: '+bed.id+' assigned to '+bed.patientId; break; case 'clean': newState = 'CLEANING'; message = 'CLEANING: '+bed.id+' marked for cleaning (admin)'; break; case 'available': newState = 'AVAILABLE'; bed.patientId = null; message = 'AVAILABLE: '+bed.id+' marked available (admin)'; break; case 'occupy': newState = 'OCCUPIED'; bed.patientId = 'PT-'+String(Math.floor(1000 + Math.random() * 9000)); message = 'OCCUPIED: '+bed.id+' occupied (admin)'; break; case 'reserve': newState = 'ASSIGNED'; message = 'RESERVED: '+bed.id+' reserved (admin)'; break; case 'out': newState = 'OUT_OF_SERVICE'; bed.patientId = null; message = 'OUT OF SERVICE: '+bed.id+' taken out of service'; break; default: message = 'Unknown action'; } if (newState !== bed.state) { bed.state = newState; bed.lastChange = new Date(); bed.history.push({ state: newState, timestamp: new Date(), source: 'admin' }); bed.displayState = newState; updateBedTimeline(message, bed.id); updateBedFlowFromAdmin(); } document.getElementById('admin-feedback').textContent = message; renderBedGrid(); updateBedDropdowns(); if (curTab === 'bed') renderContent(); }
-  function reconcileMismatches() { var mismatches = beds.filter(function(b){ return hasMismatch(b); }); if (mismatches.length === 0) { document.getElementById('mismatch-details').innerHTML = 'All beds are in sync!'; return; } mismatches.forEach(function(bed) { bed.state = bed.displayState; bed.history.push({ state: bed.state, timestamp: new Date(), source: 'reconcile' }); updateBedTimeline('RECONCILED: '+bed.id+' system now matches IoT', bed.id); }); renderBedGrid(); updateBedMetrics(); document.getElementById('mismatch-details').innerHTML = 'Reconciled '+mismatches.length+' mismatched beds'; updateBedFlowFromAdmin(); if (curTab === 'bed') renderContent(); }
-  function updateBedDropdowns() { ['iot-bed-select', 'admin-bed-select'].forEach(function(id) { var select = document.getElementById(id); if (!select) return; var currentVal = select.value; select.innerHTML = beds.map(function(bed) { var stateConfig = getStateConfig(bed.state); var isMismatch = hasMismatch(bed); return '<option value="'+bed.id+'">'+bed.id+' ('+bed.ward+') - '+stateConfig.label+(isMismatch ? ' MISMATCH' : '')+'</option>'; }).join(''); if (currentVal && beds.some(function(b){ return b.id === currentVal; })) { select.value = currentVal; } }); }
-  function updateBedFlowFromAdmin() { var facs = F(); facs.forEach(function(fac) { var facBeds = beds.filter(function(b){ return b.facility === fac.n; }); var occupied = facBeds.filter(function(b){ return b.state === 'OCCUPIED' || b.state === 'ASSIGNED'; }).length; var total = facBeds.length; fac.free = total - occupied; var icuBeds = facBeds.filter(function(b){ return b.ward === 'ICU'; }); var icuOccupied = icuBeds.filter(function(b){ return b.state === 'OCCUPIED' || b.state === 'ASSIGNED'; }).length; fac.icuFree = icuBeds.length - icuOccupied; }); renderMetrics(); }
+  // ─── BED ADMIN FUNCTIONS ───
+  function renderBedGrid() {
+    var grid = document.getElementById('bed-grid');
+    if (!grid) return;
+    grid.innerHTML = beds.map(function(bed) {
+      var stateConfig = getStateConfig(bed.state);
+      var displayConfig = getStateConfig(bed.displayState);
+      var isMismatch = hasMismatch(bed);
+      var timeSince = Math.floor((new Date() - new Date(bed.lastChange)) / 1000 / 60);
+      var timeStr = timeSince < 1 ? 'just now' : timeSince + 'm ago';
+      var bedClass = 'bed-tile';
+      if (bed.state === 'OCCUPIED') bedClass += ' bed-occupied';
+      else if (bed.state === 'UNCLEAN') bedClass += ' bed-unclean';
+      else if (bed.state === 'CLEANING') bedClass += ' bed-cleaning';
+      else if (bed.state === 'AVAILABLE') bedClass += ' bed-available';
+      else if (bed.state === 'RESERVED') bedClass += ' bed-reserved';
+      else if (bed.state === 'ASSIGNED') bedClass += ' bed-assigned';
+      else if (bed.state === 'OUT_OF_SERVICE') bedClass += ' bed-out';
+      var wardLabel = bed.ward ? ' <span style="font-size:9px;color:var(--text3);">('+bed.ward+')</span>' : '';
+      var reserveBadge = bed.state === 'RESERVED' && bed.reservedFor ? '<div class="bed-reserve-badge">🔒 '+bed.reservedFor+'</div>' : '';
+      return '<div class="'+bedClass+'" style="border-color: '+(isMismatch ? 'var(--danger)' : stateConfig.color)+';">'+
+        (isMismatch ? '<div class="bed-mismatch">!</div>' : '')+
+        reserveBadge+
+        '<div><div class="bed-id">'+bed.id+wardLabel+'</div>'+
+        '<div style="font-size:10px; color:var(--text3);">'+bed.facility+'</div>'+
+        '<div class="bed-status" style="background:'+stateConfig.color+'20; color:'+stateConfig.color+';">'+stateConfig.label+'</div>'+
+        (bed.patientId ? '<div class="bed-patient">Patient: '+bed.patientId+'</div>' : (bed.reservedFor ? '<div class="bed-patient" style="color:var(--reserve);">Reserved: '+bed.reservedFor+'</div>' : '<div class="bed-patient" style="color:var(--text3);">— empty —</div>'))+
+        '</div><div><div class="bed-iot">'+
+        '<span style="color:'+(isMismatch ? 'var(--danger)' : 'var(--acc)')+';">'+(isMismatch ? 'MISMATCH' : 'SYNC')+'</span>'+
+        (isMismatch ? ' - IoT says: '+displayConfig.label : '')+
+        '</div><div class="bed-last-change">Last change: '+timeStr+'</div></div></div>';
+    }).join('');
+    updateBedMetrics();
+  }
+
+  function updateBedMetrics() {
+    var sysOcc = beds.filter(function(b){ return b.state === 'OCCUPIED'; }).length;
+    var realOcc = beds.filter(function(b){ return b.displayState === 'OCCUPIED'; }).length;
+    var mismatch = countMismatches();
+    var sysEl = document.getElementById('sys-occupied');
+    var realEl = document.getElementById('real-occupied');
+    var mismatchEl = document.getElementById('mismatch-count');
+    var badgeEl = document.getElementById('mismatch-badge');
+    var timeEl = document.getElementById('mismatch-time');
+    if (sysEl) sysEl.textContent = sysOcc;
+    if (realEl) realEl.textContent = realOcc;
+    if (mismatchEl) { mismatchEl.textContent = mismatch; mismatchEl.style.color = mismatch > 0 ? 'var(--danger)' : 'var(--acc)'; }
+    if (badgeEl) { badgeEl.textContent = mismatch; badgeEl.style.color = mismatch > 0 ? 'var(--danger)' : 'var(--acc)'; }
+    if (timeEl) timeEl.textContent = 'Updated: ' + new Date().toLocaleTimeString();
+    var detailsEl = document.getElementById('mismatch-details');
+    if (detailsEl) {
+      if (mismatch > 0) {
+        var mismatches = beds.filter(function(b){ return hasMismatch(b); });
+        detailsEl.style.display = 'block';
+        detailsEl.innerHTML = mismatches.map(function(b) {
+          return '<div style="display:flex; justify-content:space-between; padding:2px 0; border-bottom:1px solid var(--line);"><span><b>'+b.id+'</b> ('+b.ward+')</span><span>System: '+getStateConfig(b.state).label+' -> IoT: '+getStateConfig(b.displayState).label+'</span></div>';
+        }).join('');
+      } else { detailsEl.style.display = 'none'; }
+    }
+  }
+
+  function updateBedTimeline(message, bedId) {
+    bedTimeline.unshift({ timestamp: new Date(), message: message, bedId: bedId });
+    if (bedTimeline.length > 100) bedTimeline.pop();
+    renderBedTimeline();
+  }
+
+  function renderBedTimeline() {
+    var container = document.getElementById('timeline-entries');
+    var countEl = document.getElementById('timeline-count');
+    if (!container) return;
+    if (countEl) countEl.textContent = bedTimeline.length + ' events';
+    container.innerHTML = bedTimeline.slice(0, 30).map(function(entry) {
+      var time = entry.timestamp.toLocaleTimeString();
+      var bedInfo = entry.bedId ? ' ('+entry.bedId+')' : '';
+      return '<div style="display:flex; gap:10px; padding:4px 0; border-bottom:1px solid var(--line); font-size:12px;"><span style="color:var(--text3); min-width:70px;">'+time+'</span><span style="color:var(--text);">'+entry.message+bedInfo+'</span></div>';
+    }).join('') || '<div style="color:var(--text3); padding:8px;">No events yet.</div>';
+  }
+
+  function simulateIoT(bedId, action) {
+    var bed = beds.find(function(b){ return b.id === bedId; });
+    if (!bed) { document.getElementById('iot-feedback').textContent = 'Bed not found'; return; }
+    var oldState = bed.displayState;
+    var newState = oldState;
+    var message = '';
+    switch(action) {
+      case 'discharge':
+        if (oldState === 'OCCUPIED') { 
+          newState = 'UNCLEAN'; 
+          bed.patientId = null; 
+          if (bed.reservedFor) { bed.reservedFor = null; }
+          message = 'DISCHARGE: '+bed.id+' patient left, bed is now UNCLEAN'; 
+        } else { 
+          message = bed.id+' is not occupied (current: '+getStateConfig(oldState).label+')'; 
+        }
+        break;
+      case 'clean':
+        if (oldState === 'UNCLEAN') { 
+          newState = 'CLEANING'; 
+          message = 'CLEANING: '+bed.id+' cleaning started'; 
+        } else { 
+          message = bed.id+' is not UNCLEAN (current: '+getStateConfig(oldState).label+')'; 
+        }
+        break;
+      case 'available':
+        if (oldState === 'CLEANING' || oldState === 'UNCLEAN') { 
+          newState = 'AVAILABLE'; 
+          message = 'AVAILABLE: '+bed.id+' is now ready for assignment'; 
+          // After cleaning, auto-reserve if queue not empty
+          setTimeout(function() { 
+            attemptAutoReserveOnAvailable(bed.id); 
+          }, 100);
+        } else { 
+          message = bed.id+' cannot be marked available (current: '+getStateConfig(oldState).label+')'; 
+        }
+        break;
+      case 'occupy':
+        if (oldState === 'AVAILABLE' || oldState === 'ASSIGNED' || oldState === 'RESERVED') { 
+          newState = 'OCCUPIED'; 
+          bed.patientId = 'PT-'+String(Math.floor(1000 + Math.random() * 9000));
+          if (bed.reservedFor) { bed.reservedFor = null; }
+          message = 'OCCUPY: '+bed.id+' now occupied by '+bed.patientId; 
+        } else { 
+          message = bed.id+' cannot be occupied (current: '+getStateConfig(oldState).label+')'; 
+        }
+        break;
+      default: message = 'Unknown action';
+    }
+    if (newState !== oldState) {
+      bed.displayState = newState;
+      bed.lastChange = new Date();
+      bed.history.push({ state: newState, timestamp: new Date(), source: 'iot' });
+      updateBedTimeline(message, bed.id);
+      updateBedFlowFromAdmin();
+    }
+    document.getElementById('iot-feedback').textContent = message;
+    renderBedGrid();
+    updateBedDropdowns();
+    if (curTab === 'bed') renderContent();
+  }
+
+  function adminAction(bedId, action) {
+    var bed = beds.find(function(b){ return b.id === bedId; });
+    if (!bed) { document.getElementById('admin-feedback').textContent = 'Bed not found'; return; }
+    var newState = bed.state;
+    var message = '';
+    switch(action) {
+      case 'assign': 
+        newState = 'ASSIGNED'; 
+        bed.patientId = 'PT-'+String(Math.floor(1000 + Math.random() * 9000)); 
+        if (bed.reservedFor) { bed.reservedFor = null; }
+        message = 'ASSIGNED: '+bed.id+' assigned to '+bed.patientId; 
+        break;
+      case 'clean': 
+        newState = 'CLEANING'; 
+        message = 'CLEANING: '+bed.id+' marked for cleaning (admin)'; 
+        break;
+      case 'available': 
+        newState = 'AVAILABLE'; 
+        bed.patientId = null; 
+        if (bed.reservedFor) { bed.reservedFor = null; }
+        message = 'AVAILABLE: '+bed.id+' marked available (admin)'; 
+        // Try auto-reserve
+        setTimeout(function() { 
+          attemptAutoReserveOnAvailable(bed.id); 
+        }, 100);
+        break;
+      case 'occupy': 
+        newState = 'OCCUPIED'; 
+        bed.patientId = 'PT-'+String(Math.floor(1000 + Math.random() * 9000)); 
+        if (bed.reservedFor) { bed.reservedFor = null; }
+        message = 'OCCUPIED: '+bed.id+' occupied (admin)'; 
+        break;
+      case 'reserve': 
+        if (bed.state === 'AVAILABLE' || bed.state === 'ASSIGNED') {
+          newState = 'RESERVED'; 
+          if (!bed.reservedFor) { 
+            var nextPat = getNextFromReservationQueue();
+            if (nextPat) {
+              bed.reservedFor = nextPat.patientId;
+            } else {
+              bed.reservedFor = 'PT-' + String(Math.floor(1000 + Math.random() * 9000));
+            }
+          }
+          message = 'RESERVED: '+bed.id+' reserved for '+bed.reservedFor; 
+        } else {
+          message = 'Bed cannot be reserved (current: '+getStateConfig(bed.state).label+')';
+        }
+        break;
+      case 'unreserve':
+        if (bed.state === 'RESERVED') {
+          newState = 'AVAILABLE';
+          bed.reservedFor = null;
+          message = 'UNRESERVED: '+bed.id+' reservation cancelled';
+        } else {
+          message = 'Bed is not reserved (current: '+getStateConfig(bed.state).label+')';
+        }
+        break;
+      case 'out': 
+        newState = 'OUT_OF_SERVICE'; 
+        bed.patientId = null; 
+        if (bed.reservedFor) { bed.reservedFor = null; }
+        message = 'OUT OF SERVICE: '+bed.id+' taken out of service'; 
+        break;
+      default: message = 'Unknown action';
+    }
+    if (newState !== bed.state) {
+      bed.state = newState;
+      bed.lastChange = new Date();
+      bed.history.push({ state: newState, timestamp: new Date(), source: 'admin' });
+      bed.displayState = newState;
+      updateBedTimeline(message, bed.id);
+      updateBedFlowFromAdmin();
+    }
+    document.getElementById('admin-feedback').textContent = message;
+    renderBedGrid();
+    updateBedDropdowns();
+    if (curTab === 'bed') renderContent();
+  }
+
+  function reconcileMismatches() {
+    var mismatches = beds.filter(function(b){ return hasMismatch(b); });
+    if (mismatches.length === 0) { document.getElementById('mismatch-details').innerHTML = 'All beds are in sync!'; return; }
+    mismatches.forEach(function(bed) {
+      bed.state = bed.displayState;
+      bed.history.push({ state: bed.state, timestamp: new Date(), source: 'reconcile' });
+      updateBedTimeline('RECONCILED: '+bed.id+' system now matches IoT', bed.id);
+    });
+    renderBedGrid();
+    updateBedMetrics();
+    document.getElementById('mismatch-details').innerHTML = 'Reconciled '+mismatches.length+' mismatched beds';
+    updateBedFlowFromAdmin();
+    if (curTab === 'bed') renderContent();
+  }
+
+  function updateBedDropdowns() {
+    ['iot-bed-select', 'admin-bed-select'].forEach(function(id) {
+      var select = document.getElementById(id);
+      if (!select) return;
+      var currentVal = select.value;
+      select.innerHTML = beds.map(function(bed) {
+        var stateConfig = getStateConfig(bed.state);
+        var isMismatch = hasMismatch(bed);
+        return '<option value="'+bed.id+'">'+bed.id+' ('+bed.ward+') - '+stateConfig.label+(bed.reservedFor ? ' ['+bed.reservedFor+']' : '')+(isMismatch ? ' MISMATCH' : '')+'</option>';
+      }).join('');
+      if (currentVal && beds.some(function(b){ return b.id === currentVal; })) { select.value = currentVal; }
+    });
+  }
+
+  function updateBedFlowFromAdmin() {
+    var facs = F();
+    facs.forEach(function(fac) {
+      var facBeds = beds.filter(function(b){ return b.facility === fac.n; });
+      var occupied = facBeds.filter(function(b){ return b.state === 'OCCUPIED' || b.state === 'ASSIGNED'; }).length;
+      var total = facBeds.length;
+      fac.free = total - occupied;
+      var icuBeds = facBeds.filter(function(b){ return b.ward === 'ICU'; });
+      var icuOccupied = icuBeds.filter(function(b){ return b.state === 'OCCUPIED' || b.state === 'ASSIGNED'; }).length;
+      fac.icuFree = icuBeds.length - icuOccupied;
+    });
+    renderMetrics();
+  }
 
   // ─── RENDER FUNCTIONS ───
   function render() { renderMetrics(); renderContent(); }
 
-  // ─── CHART INSTANCES ───
   var chartInstances = {};
 
   function destroyCharts() {
@@ -661,7 +986,7 @@ select:focus,input:focus{border-color:var(--acc);}
     else if(curTab==='crl'){ C.innerHTML=crlHTML(); wireCrl(); }
   }
 
-  // ─── OPS HTML ───
+  // ─── OPS HTML ─── (same as before)
   function opsHTML() {
     var triOpts = S().tri.map(function(t){ return '<option value="'+t[0]+'">'+t[0]+' — '+t[1]+'</option>'; }).join('');
     var boardRows = patients.slice(0,10).map(function(p){
@@ -714,178 +1039,16 @@ select:focus,input:focus{border-color:var(--acc);}
     setTimeout(function() { renderOpsCharts(); }, 100);
   }
 
-  function renderOpsCharts() {
-    if(!window.Chart) return;
-    var active = patients.filter(function(p){ return p.stage < STAGES.length-1; });
-    var t1 = active.filter(function(p){ return p.cat === 'T1'; }).length;
-    var t2 = active.filter(function(p){ return p.cat === 'T2'; }).length;
-    var t3 = active.filter(function(p){ return p.cat === 'T3'; }).length;
-    var t4 = active.filter(function(p){ return p.cat === 'T4'; }).length;
+  function renderOpsCharts() { /* same as before, but keep for completeness */ if(!window.Chart) return; var active = patients.filter(function(p){ return p.stage < STAGES.length-1; }); var t1 = active.filter(function(p){ return p.cat === 'T1'; }).length; var t2 = active.filter(function(p){ return p.cat === 'T2'; }).length; var t3 = active.filter(function(p){ return p.cat === 'T3'; }).length; var t4 = active.filter(function(p){ return p.cat === 'T4'; }).length; var triCtx = document.getElementById('chart-triage'); if(triCtx) { chartInstances['triage'] = new Chart(triCtx, { type:'doughnut', data:{labels:['T1 Immediate','T2 Urgent','T3 Delayed','T4 Expectant'], datasets:[{data:[t1,t2,t3,t4], backgroundColor:['#dc2626','#d97706','#059669','#6b7280'], borderWidth:0, borderRadius:4}]}, options:{responsive:true, maintainAspectRatio:false, cutout:'65%', plugins:{legend:{position:'right', labels:{color:'#1e293b', font:{size:11, family:'Inter'}, boxWidth:12, padding:8}}}} }); } var capCtx = document.getElementById('chart-capacity'); if(capCtx) { var fNames = F().map(function(f){ return f.n.split(' ')[0]; }); var fBeds = F().map(function(f){ return f.free; }); var fICU = F().map(function(f){ return f.icuFree; }); var fVent = F().map(function(f){ return f.ventFree; }); chartInstances['capacity'] = new Chart(capCtx, { type:'bar', data:{labels:fNames, datasets:[ {label:'Beds', data:fBeds, backgroundColor:'#2563eb', borderRadius:4}, {label:'ICU', data:fICU, backgroundColor:'#d97706', borderRadius:4}, {label:'Vent', data:fVent, backgroundColor:'#059669', borderRadius:4} ]}, options:{responsive:true, maintainAspectRatio:false, scales:{x:{ticks:{color:'#64748b',font:{size:10}}, grid:{display:false}}, y:{ticks:{color:'#64748b',font:{size:10}}, grid:{color:'#f1f3f9'}}}, plugins:{legend:{labels:{color:'#1e293b',font:{size:10}, boxWidth:10}}}} }); } var supCtx = document.getElementById('chart-supply'); if(supCtx) { var items = IV().map(function(x){ return x.item.split(' ')[0]; }); var hours = IV().map(function(x){ return x.rate > 0 ? Math.min(x.stock / x.rate, 48) : 48; }); var cols = hours.map(function(h){ return h < 6 ? '#dc2626' : h < 18 ? '#d97706' : '#059669'; }); chartInstances['supply'] = new Chart(supCtx, { type:'bar', data:{labels:items, datasets:[{label:'Hours remaining', data:hours, backgroundColor:cols, borderRadius:4}]}, options:{indexAxis:'y', responsive:true, maintainAspectRatio:false, scales:{x:{ticks:{color:'#64748b',font:{size:10}}, grid:{color:'#f1f3f9'}}, y:{ticks:{color:'#1e293b',font:{size:10}}, grid:{display:false}}}, plugins:{legend:{display:false}}} }); } }
 
-    var triCtx = document.getElementById('chart-triage');
-    if(triCtx) {
-      chartInstances['triage'] = new Chart(triCtx, {
-        type:'doughnut',
-        data:{labels:['T1 Immediate','T2 Urgent','T3 Delayed','T4 Expectant'], datasets:[{data:[t1,t2,t3,t4], backgroundColor:['#dc2626','#d97706','#059669','#6b7280'], borderWidth:0, borderRadius:4}]},
-        options:{responsive:true, maintainAspectRatio:false, cutout:'65%', plugins:{legend:{position:'right', labels:{color:'#1e293b', font:{size:11, family:'Inter'}, boxWidth:12, padding:8}}}}
-      });
-    }
-    var capCtx = document.getElementById('chart-capacity');
-    if(capCtx) {
-      var fNames = F().map(function(f){ return f.n.split(' ')[0]; });
-      var fBeds = F().map(function(f){ return f.free; });
-      var fICU = F().map(function(f){ return f.icuFree; });
-      var fVent = F().map(function(f){ return f.ventFree; });
-      chartInstances['capacity'] = new Chart(capCtx, {
-        type:'bar',
-        data:{labels:fNames, datasets:[
-          {label:'Beds', data:fBeds, backgroundColor:'#2563eb', borderRadius:4},
-          {label:'ICU', data:fICU, backgroundColor:'#d97706', borderRadius:4},
-          {label:'Vent', data:fVent, backgroundColor:'#059669', borderRadius:4}
-        ]},
-        options:{responsive:true, maintainAspectRatio:false, scales:{x:{ticks:{color:'#64748b',font:{size:10}}, grid:{display:false}}, y:{ticks:{color:'#64748b',font:{size:10}}, grid:{color:'#f1f3f9'}}}, plugins:{legend:{labels:{color:'#1e293b',font:{size:10}, boxWidth:10}}}}
-      });
-    }
-    var supCtx = document.getElementById('chart-supply');
-    if(supCtx) {
-      var items = IV().map(function(x){ return x.item.split(' ')[0]; });
-      var hours = IV().map(function(x){ return x.rate > 0 ? Math.min(x.stock / x.rate, 48) : 48; });
-      var cols = hours.map(function(h){ return h < 6 ? '#dc2626' : h < 18 ? '#d97706' : '#059669'; });
-      chartInstances['supply'] = new Chart(supCtx, {
-        type:'bar',
-        data:{labels:items, datasets:[{label:'Hours remaining', data:hours, backgroundColor:cols, borderRadius:4}]},
-        options:{indexAxis:'y', responsive:true, maintainAspectRatio:false, scales:{x:{ticks:{color:'#64748b',font:{size:10}}, grid:{color:'#f1f3f9'}}, y:{ticks:{color:'#1e293b',font:{size:10}}, grid:{display:false}}}, plugins:{legend:{display:false}}}
-      });
-    }
-  }
+  // ─── HOSPITALS CHARTS ─── (same as before)
+  function renderHospCharts() { if(!window.Chart) return; var list = F(); var names = list.map(function(f){ return f.n.split(' ')[0]; }); var c1 = document.getElementById('chart-bed-occ'); if(c1) { chartInstances['bedOcc'] = new Chart(c1, { type:'bar', data:{labels:names, datasets:[ {label:'Used', data:list.map(function(f){ return f.beds - f.free; }), backgroundColor:'#2563eb', borderRadius:4}, {label:'Free', data:list.map(function(f){ return f.free; }), backgroundColor:'#bfdbfe', borderRadius:4} ]}, options:{responsive:true, maintainAspectRatio:false, plugins:{legend:{labels:{color:'#334155',font:{size:10}}}}, scales:{x:{stacked:true, ticks:{color:'#64748b',font:{size:10}}, grid:{display:false}}, y:{stacked:true, ticks:{color:'#64748b',font:{size:10}}, grid:{color:'#e5e7eb'}}}} }); } var c2 = document.getElementById('chart-bed-triage'); if(c2) { var active = patients.filter(function(p){ return p.stage < STAGES.length-1 && p.fac; }); var t1b = active.filter(function(p){ return p.cat === 'T1'; }).length; var t2b = active.filter(function(p){ return p.cat === 'T2'; }).length; var t3b = active.filter(function(p){ return p.cat === 'T3'; }).length; var t4b = active.filter(function(p){ return p.cat === 'T4'; }).length; var totalBeds = list.reduce(function(a,f){ return a + f.beds; }, 0); var freeBeds = list.reduce(function(a,f){ return a + f.free; }, 0); chartInstances['bedTriage'] = new Chart(c2, { type:'doughnut', data:{labels:['T1 Immediate','T2 Urgent','T3 Delayed','T4 Expectant','Unoccupied'], datasets:[{data:[t1b,t2b,t3b,t4b,freeBeds], backgroundColor:['#dc2626','#d97706','#059669','#94a3b8','#e2e8f0'], borderWidth:0, borderRadius:3}]}, options:{responsive:true, maintainAspectRatio:false, cutout:'60%', plugins:{legend:{position:'right', labels:{color:'#334155',font:{size:10}, boxWidth:10, padding:6}}}} }); } var c3 = document.getElementById('chart-resilience'); if(c3) { var rs = resScore(); var optimizedRs = Math.min(100, rs + Math.round(rs * 0.25)); chartInstances['resilience'] = new Chart(c3, { type:'bar', data:{labels:['Current State','With Bed Optimization','With Discharge Automation','Full Optimization'], datasets:[{label:'Resilience Score', data:[rs, optimizedRs, Math.min(100, rs+15), Math.min(100, rs+22)], backgroundColor:['#2563eb','#059669','#0891b2','#7c3aed'], borderRadius:6}]}, options:{responsive:true, maintainAspectRatio:false, indexAxis:'y', plugins:{legend:{display:false}}, scales:{x:{max:100, ticks:{color:'#64748b',font:{size:10}}, grid:{color:'#e5e7eb'}}, y:{ticks:{color:'#334155',font:{size:10}}, grid:{display:false}}}} }); } var c4 = document.getElementById('chart-demand'); if(c4) { var hours = Array.from({length:24}, function(_,i){ return 'H'+i; }); var demandData = [12,15,22,35,48,55,58,52,45,38,30,25,22,20,18,16,15,14,13,12,12,12,12,12]; var capacityLine = Array(24).fill(62); chartInstances['demand'] = new Chart(c4, { type:'line', data:{labels:hours, datasets:[ {label:'Bed Demand', data:demandData, borderColor:'#2563eb', backgroundColor:'rgba(37,99,235,.1)', fill:true, tension:0.3, pointRadius:2}, {label:'Total Capacity', data:capacityLine, borderColor:'#dc2626', borderDash:[6,4], borderWidth:1.5, pointRadius:0, fill:false} ]}, options:{responsive:true, maintainAspectRatio:false, plugins:{legend:{labels:{color:'#334155',font:{size:10}, boxWidth:10}}}, scales:{x:{ticks:{color:'#64748b',font:{size:9}}, grid:{display:false}}, y:{ticks:{color:'#64748b',font:{size:10}}, grid:{color:'#e5e7eb'}}}} }); } }
 
-  // ─── HOSPITALS CHARTS ───
-  function renderHospCharts() {
-    if(!window.Chart) return;
-    var list = F();
-    var names = list.map(function(f){ return f.n.split(' ')[0]; });
+  // ─── BED FLOW CHARTS ─── (same as before)
+  function renderBedCharts() { if(!window.Chart) return; var c1 = document.getElementById('chart-los'); if(c1) { var bins = ['0-2h','2-4h','4-6h','6-8h','8-12h','12-24h','24h+']; var counts = [3,8,12,6,4,2,1]; chartInstances['los'] = new Chart(c1, { type:'bar', data:{labels:bins, datasets:[{label:'Patients', data:counts, backgroundColor:['#bfdbfe','#93c5fd','#60a5fa','#3b82f6','#2563eb','#1d4ed8','#1e40af'], borderRadius:4}]}, options:{responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{x:{ticks:{color:'#64748b',font:{size:9}}, grid:{display:false}}, y:{ticks:{color:'#64748b',font:{size:10}}, grid:{color:'#e5e7eb'}}}} }); } var c2 = document.getElementById('chart-turnover'); if(c2) { var days = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun']; var turnover = [2.1,2.4,2.8,3.1,2.9,2.2,1.8]; var target = Array(7).fill(3.0); chartInstances['turnover'] = new Chart(c2, { type:'line', data:{labels:days, datasets:[ {label:'Turnover Rate', data:turnover, borderColor:'#2563eb', backgroundColor:'rgba(37,99,235,.08)', fill:true, tension:0.4, pointRadius:4, pointBackgroundColor:'#2563eb'}, {label:'Target (3.0)', data:target, borderColor:'#059669', borderDash:[6,4], borderWidth:1.5, pointRadius:0, fill:false} ]}, options:{responsive:true, maintainAspectRatio:false, plugins:{legend:{labels:{color:'#334155',font:{size:10}, boxWidth:10}}}, scales:{x:{ticks:{color:'#64748b',font:{size:10}}, grid:{display:false}}, y:{ticks:{color:'#64748b',font:{size:10}}, grid:{color:'#e5e7eb'}}}} }); } var c3 = document.getElementById('chart-wait-hist'); if(c3) { var wtBins = ['0-5m','5-10m','10-15m','15-20m','20-30m','30m+']; var wtCounts = [15,22,18,8,4,2]; var wtColors = wtCounts.map(function(_,i){ return i < 3 ? '#059669' : i < 4 ? '#d97706' : '#dc2626'; }); chartInstances['waitHist'] = new Chart(c3, { type:'bar', data:{labels:wtBins, datasets:[{label:'Patients', data:wtCounts, backgroundColor:wtColors, borderRadius:4}]}, options:{responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}, title:{display:true, text:'Wait time from triage to bed assignment', color:'#64748b', font:{size:11}}}, scales:{x:{ticks:{color:'#64748b',font:{size:9}}, grid:{display:false}}, y:{ticks:{color:'#64748b',font:{size:10}}, grid:{color:'#e5e7eb'}}}} }); } var c4 = document.getElementById('chart-bed-forecast'); if(c4) { var hrs = Array.from({length:12}, function(_,i){ return 'H+'+i; }); var current = [5,4,3,2,1,1,0,0,1,2,3,4]; var optimized = [5,5,4,3,3,2,2,2,3,4,5,6]; chartInstances['forecast'] = new Chart(c4, { type:'line', data:{labels:hrs, datasets:[ {label:'Current bed availability', data:current, borderColor:'#dc2626', backgroundColor:'rgba(220,38,38,.06)', fill:true, tension:0.3, pointRadius:3}, {label:'With optimization', data:optimized, borderColor:'#059669', backgroundColor:'rgba(5,150,105,.06)', fill:true, tension:0.3, pointRadius:3} ]}, options:{responsive:true, maintainAspectRatio:false, plugins:{legend:{labels:{color:'#334155',font:{size:10}, boxWidth:10}}, title:{display:true, text:'Bed availability: current vs optimized discharge flow', color:'#64748b', font:{size:11}}}, scales:{x:{ticks:{color:'#64748b',font:{size:9}}, grid:{display:false}}, y:{ticks:{color:'#64748b',font:{size:10}}, grid:{color:'#e5e7eb'}}}} }); } var c5 = document.getElementById('chart-bed-breakdown'); if(c5) { var occupied = beds.filter(function(b){ return b.state === 'OCCUPIED' || b.state === 'ASSIGNED'; }).length; var available = getAvailableCount(); var unclean = beds.filter(function(b){ return b.state === 'UNCLEAN'; }).length; var cleaning = beds.filter(function(b){ return b.state === 'CLEANING'; }).length; var out = beds.filter(function(b){ return b.state === 'OUT_OF_SERVICE'; }).length; var reserved = beds.filter(function(b){ return b.state === 'RESERVED'; }).length; chartInstances['bedBreakdown'] = new Chart(c5, { type:'doughnut', data:{labels:['Occupied','Available (fixed)','Reserved','Unclean','Cleaning','Out of Service'], datasets:[{data:[occupied,available,reserved,unclean,cleaning,out], backgroundColor:['#dc2626','#2563eb','#8b5cf6','#d97706','#fbbf24','#94a3b8'], borderWidth:0, borderRadius:3}]}, options:{responsive:true, maintainAspectRatio:false, cutout:'60%', plugins:{legend:{position:'right', labels:{color:'#334155',font:{size:10}, boxWidth:10, padding:6}}}} }); } }
 
-    var c1 = document.getElementById('chart-bed-occ');
-    if(c1) {
-      chartInstances['bedOcc'] = new Chart(c1, {
-        type:'bar',
-        data:{labels:names, datasets:[
-          {label:'Used', data:list.map(function(f){ return f.beds - f.free; }), backgroundColor:'#2563eb', borderRadius:4},
-          {label:'Free', data:list.map(function(f){ return f.free; }), backgroundColor:'#bfdbfe', borderRadius:4}
-        ]},
-        options:{responsive:true, maintainAspectRatio:false, plugins:{legend:{labels:{color:'#334155',font:{size:10}}}}, scales:{x:{stacked:true, ticks:{color:'#64748b',font:{size:10}}, grid:{display:false}}, y:{stacked:true, ticks:{color:'#64748b',font:{size:10}}, grid:{color:'#e5e7eb'}}}}
-      });
-    }
-    var c2 = document.getElementById('chart-bed-triage');
-    if(c2) {
-      var active = patients.filter(function(p){ return p.stage < STAGES.length-1 && p.fac; });
-      var t1b = active.filter(function(p){ return p.cat === 'T1'; }).length;
-      var t2b = active.filter(function(p){ return p.cat === 'T2'; }).length;
-      var t3b = active.filter(function(p){ return p.cat === 'T3'; }).length;
-      var t4b = active.filter(function(p){ return p.cat === 'T4'; }).length;
-      var totalBeds = list.reduce(function(a,f){ return a + f.beds; }, 0);
-      var freeBeds = list.reduce(function(a,f){ return a + f.free; }, 0);
-      chartInstances['bedTriage'] = new Chart(c2, {
-        type:'doughnut',
-        data:{labels:['T1 Immediate','T2 Urgent','T3 Delayed','T4 Expectant','Unoccupied'], datasets:[{data:[t1b,t2b,t3b,t4b,freeBeds], backgroundColor:['#dc2626','#d97706','#059669','#94a3b8','#e2e8f0'], borderWidth:0, borderRadius:3}]},
-        options:{responsive:true, maintainAspectRatio:false, cutout:'60%', plugins:{legend:{position:'right', labels:{color:'#334155',font:{size:10}, boxWidth:10, padding:6}}}}
-      });
-    }
-    var c3 = document.getElementById('chart-resilience');
-    if(c3) {
-      var rs = resScore();
-      var optimizedRs = Math.min(100, rs + Math.round(rs * 0.25));
-      chartInstances['resilience'] = new Chart(c3, {
-        type:'bar',
-        data:{labels:['Current State','With Bed Optimization','With Discharge Automation','Full Optimization'], datasets:[{label:'Resilience Score', data:[rs, optimizedRs, Math.min(100, rs+15), Math.min(100, rs+22)], backgroundColor:['#2563eb','#059669','#0891b2','#7c3aed'], borderRadius:6}]},
-        options:{responsive:true, maintainAspectRatio:false, indexAxis:'y', plugins:{legend:{display:false}}, scales:{x:{max:100, ticks:{color:'#64748b',font:{size:10}}, grid:{color:'#e5e7eb'}}, y:{ticks:{color:'#334155',font:{size:10}}, grid:{display:false}}}}
-      });
-    }
-    var c4 = document.getElementById('chart-demand');
-    if(c4) {
-      var hours = Array.from({length:24}, function(_,i){ return 'H'+i; });
-      var demandData = [12,15,22,35,48,55,58,52,45,38,30,25,22,20,18,16,15,14,13,12,12,12,12,12];
-      var capacityLine = Array(24).fill(62);
-      chartInstances['demand'] = new Chart(c4, {
-        type:'line',
-        data:{labels:hours, datasets:[
-          {label:'Bed Demand', data:demandData, borderColor:'#2563eb', backgroundColor:'rgba(37,99,235,.1)', fill:true, tension:0.3, pointRadius:2},
-          {label:'Total Capacity', data:capacityLine, borderColor:'#dc2626', borderDash:[6,4], borderWidth:1.5, pointRadius:0, fill:false}
-        ]},
-        options:{responsive:true, maintainAspectRatio:false, plugins:{legend:{labels:{color:'#334155',font:{size:10}, boxWidth:10}}}, scales:{x:{ticks:{color:'#64748b',font:{size:9}}, grid:{display:false}}, y:{ticks:{color:'#64748b',font:{size:10}}, grid:{color:'#e5e7eb'}}}}
-      });
-    }
-  }
-
-  // ─── BED FLOW CHARTS ───
-  function renderBedCharts() {
-    if(!window.Chart) return;
-    var c1 = document.getElementById('chart-los');
-    if(c1) {
-      var bins = ['0-2h','2-4h','4-6h','6-8h','8-12h','12-24h','24h+'];
-      var counts = [3,8,12,6,4,2,1];
-      chartInstances['los'] = new Chart(c1, {
-        type:'bar',
-        data:{labels:bins, datasets:[{label:'Patients', data:counts, backgroundColor:['#bfdbfe','#93c5fd','#60a5fa','#3b82f6','#2563eb','#1d4ed8','#1e40af'], borderRadius:4}]},
-        options:{responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{x:{ticks:{color:'#64748b',font:{size:9}}, grid:{display:false}}, y:{ticks:{color:'#64748b',font:{size:10}}, grid:{color:'#e5e7eb'}}}}
-      });
-    }
-    var c2 = document.getElementById('chart-turnover');
-    if(c2) {
-      var days = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
-      var turnover = [2.1,2.4,2.8,3.1,2.9,2.2,1.8];
-      var target = Array(7).fill(3.0);
-      chartInstances['turnover'] = new Chart(c2, {
-        type:'line',
-        data:{labels:days, datasets:[
-          {label:'Turnover Rate', data:turnover, borderColor:'#2563eb', backgroundColor:'rgba(37,99,235,.08)', fill:true, tension:0.4, pointRadius:4, pointBackgroundColor:'#2563eb'},
-          {label:'Target (3.0)', data:target, borderColor:'#059669', borderDash:[6,4], borderWidth:1.5, pointRadius:0, fill:false}
-        ]},
-        options:{responsive:true, maintainAspectRatio:false, plugins:{legend:{labels:{color:'#334155',font:{size:10}, boxWidth:10}}}, scales:{x:{ticks:{color:'#64748b',font:{size:10}}, grid:{display:false}}, y:{ticks:{color:'#64748b',font:{size:10}}, grid:{color:'#e5e7eb'}}}}
-      });
-    }
-    var c3 = document.getElementById('chart-wait-hist');
-    if(c3) {
-      var wtBins = ['0-5m','5-10m','10-15m','15-20m','20-30m','30m+'];
-      var wtCounts = [15,22,18,8,4,2];
-      var wtColors = wtCounts.map(function(_,i){ return i < 3 ? '#059669' : i < 4 ? '#d97706' : '#dc2626'; });
-      chartInstances['waitHist'] = new Chart(c3, {
-        type:'bar',
-        data:{labels:wtBins, datasets:[{label:'Patients', data:wtCounts, backgroundColor:wtColors, borderRadius:4}]},
-        options:{responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}, title:{display:true, text:'Wait time from triage to bed assignment', color:'#64748b', font:{size:11}}}, scales:{x:{ticks:{color:'#64748b',font:{size:9}}, grid:{display:false}}, y:{ticks:{color:'#64748b',font:{size:10}}, grid:{color:'#e5e7eb'}}}}
-      });
-    }
-    var c4 = document.getElementById('chart-bed-forecast');
-    if(c4) {
-      var hrs = Array.from({length:12}, function(_,i){ return 'H+'+i; });
-      var current = [5,4,3,2,1,1,0,0,1,2,3,4];
-      var optimized = [5,5,4,3,3,2,2,2,3,4,5,6];
-      chartInstances['forecast'] = new Chart(c4, {
-        type:'line',
-        data:{labels:hrs, datasets:[
-          {label:'Current bed availability', data:current, borderColor:'#dc2626', backgroundColor:'rgba(220,38,38,.06)', fill:true, tension:0.3, pointRadius:3},
-          {label:'With optimization', data:optimized, borderColor:'#059669', backgroundColor:'rgba(5,150,105,.06)', fill:true, tension:0.3, pointRadius:3}
-        ]},
-        options:{responsive:true, maintainAspectRatio:false, plugins:{legend:{labels:{color:'#334155',font:{size:10}, boxWidth:10}}, title:{display:true, text:'Bed availability: current vs optimized discharge flow', color:'#64748b', font:{size:11}}}, scales:{x:{ticks:{color:'#64748b',font:{size:9}}, grid:{display:false}}, y:{ticks:{color:'#64748b',font:{size:10}}, grid:{color:'#e5e7eb'}}}}
-      });
-    }
-    var c5 = document.getElementById('chart-bed-breakdown');
-    if(c5) {
-      var occupied = beds.filter(function(b){ return b.state === 'OCCUPIED' || b.state === 'ASSIGNED'; }).length;
-      var available = getAvailableCount();
-      var unclean = beds.filter(function(b){ return b.state === 'UNCLEAN'; }).length;
-      var cleaning = beds.filter(function(b){ return b.state === 'CLEANING'; }).length;
-      var out = beds.filter(function(b){ return b.state === 'OUT_OF_SERVICE'; }).length;
-      chartInstances['bedBreakdown'] = new Chart(c5, {
-        type:'doughnut',
-        data:{labels:['Occupied','Available (fixed)','Unclean','Cleaning','Out of Service'], datasets:[{data:[occupied,available,unclean,cleaning,out], backgroundColor:['#dc2626','#2563eb','#d97706','#fbbf24','#94a3b8'], borderWidth:0, borderRadius:3}]},
-        options:{responsive:true, maintainAspectRatio:false, cutout:'60%', plugins:{legend:{position:'right', labels:{color:'#334155',font:{size:10}, boxWidth:10, padding:6}}}}
-      });
-    }
-  }
-
-  // ─── OTHER PANEL FUNCTIONS ─── (unchanged, abbreviated)
-  function hospHTML() { /* same as before */ var f = F()[0]; function res(label, free, total){ var pct = total?Math.round(free/total*100):0; return '<div class="res"><div class="res-label">'+label+'</div><div class="res-nums" style="color:'+capC(pct)+'">'+free+' <span style="font-size:14px;color:var(--text3)">/ '+total+'</span></div><div class="res-bar"><div style="width:'+pct+'%;background:'+capC(pct)+';box-shadow:0 0 8px '+capC(pct)+'"></div></div></div>'; } var wardRows = wardData.map(function(w) { var wardBeds = beds.filter(function(b){ return b.ward === w.name; }); var occupied = wardBeds.filter(function(b){ return b.state === 'OCCUPIED' || b.state === 'ASSIGNED'; }).length; var pct = w.beds ? Math.round(occupied/w.beds*100) : 0; var col = pct > 80 ? 'var(--danger)' : pct > 60 ? 'var(--warn)' : 'var(--acc)'; return '<div style="display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px solid var(--line); font-size:13px;"><span><b>'+w.name+'</b></span><span>Demand: <b style="color:var(--warn);">'+w.demand+'</b></span><span>Occupied: <b style="color:'+col+';">'+occupied+'</b> / '+w.beds+'</span><span style="color:'+col+';">'+pct+'%</span></div>'; }).join(''); var totalDemand = getTotalDemand(); var available = getAvailableCount(); var roomRows = rooms.map(function(r){ var scol = r.status==='available'?'var(--acc)':r.status==='occupied'?'var(--warn)':r.status==='cleaning'?'var(--text2)':'var(--danger)'; var stat = r.status.toUpperCase(); return '<div style="display:flex;gap:10px;padding:8px 12px;border:1px solid var(--line);margin-bottom:4px;background:var(--panel2);font-size:12px;"><span style="font-weight:700;min-width:70px;">'+r.id+'</span><span style="color:var(--text2);min-width:100px;">'+r.fac.split(' ')[0]+'</span><span style="color:var(--text3);min-width:100px;">'+r.type+'</span><span style="color:'+scol+';min-width:90px;font-weight:600;">'+stat+'</span><span style="color:var(--text2);">'+(r.patient||'—')+'</span><span style="color:var(--text3);">'+(r.eta?'ETA: '+r.eta:'')+'</span></div>'; }).join(''); return '<div class="g2"><div class="card span2"><div class="card-head"><span class="card-title">HOSPITAL MANAGEMENT — WARD OVERVIEW</span></div><div class="card-body">'+'<div class="fac-card"><div class="fac-head"><div><div class="fac-name-big">'+f.n+'</div><div class="fac-type">'+f.t+'</div></div><div class="fac-role">-> '+f.role+'</div></div>'+'<div class="fac-body">'+res('BEDS',f.free,f.beds)+res('ICU',f.icuFree,f.icu)+res('VENTILATORS',f.ventFree,f.vent)+'</div></div>'+'<div style="margin-top:12px;"><b>Ward Details:</b> '+wardRows+'</div>'+'<div style="margin-top:12px; padding:10px; background:'+(totalDemand > available ? 'var(--dbg)' : 'var(--acc-bg)')+'; border-radius:6px; font-size:13px; color:'+(totalDemand > available ? 'var(--danger)' : 'var(--acc)')+';">'+'Total Demand: <b>'+totalDemand+'</b> patients waiting | Available Beds: <b>'+available+'</b> (fixed) | '+(totalDemand > available ? '⚠ '+(totalDemand - available)+' more beds needed' : '✓ Demand can be met')+'</div></div></div>'+'<div class="card span2"><div class="card-head"><span class="card-title">ROOM AND OR TRACKING</span></div><div class="card-body scrollable">'+roomRows+'</div></div></div>'; }
+  // ─── OTHER PANEL FUNCTIONS (same as before, with reserve updates) ───
+  function hospHTML() { var f = F()[0]; function res(label, free, total){ var pct = total?Math.round(free/total*100):0; return '<div class="res"><div class="res-label">'+label+'</div><div class="res-nums" style="color:'+capC(pct)+'">'+free+' <span style="font-size:14px;color:var(--text3)">/ '+total+'</span></div><div class="res-bar"><div style="width:'+pct+'%;background:'+capC(pct)+';box-shadow:0 0 8px '+capC(pct)+'"></div></div></div>'; } var wardRows = wardData.map(function(w) { var wardBeds = beds.filter(function(b){ return b.ward === w.name; }); var occupied = wardBeds.filter(function(b){ return b.state === 'OCCUPIED' || b.state === 'ASSIGNED'; }).length; var pct = w.beds ? Math.round(occupied/w.beds*100) : 0; var col = pct > 80 ? 'var(--danger)' : pct > 60 ? 'var(--warn)' : 'var(--acc)'; return '<div style="display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px solid var(--line); font-size:13px;"><span><b>'+w.name+'</b></span><span>Demand: <b style="color:var(--warn);">'+w.demand+'</b></span><span>Occupied: <b style="color:'+col+';">'+occupied+'</b> / '+w.beds+'</span><span style="color:'+col+';">'+pct+'%</span></div>'; }).join(''); var totalDemand = getTotalDemand(); var available = getAvailableCount(); var roomRows = rooms.map(function(r){ var scol = r.status==='available'?'var(--acc)':r.status==='occupied'?'var(--warn)':r.status==='cleaning'?'var(--text2)':'var(--danger)'; var stat = r.status.toUpperCase(); return '<div style="display:flex;gap:10px;padding:8px 12px;border:1px solid var(--line);margin-bottom:4px;background:var(--panel2);font-size:12px;"><span style="font-weight:700;min-width:70px;">'+r.id+'</span><span style="color:var(--text2);min-width:100px;">'+r.fac.split(' ')[0]+'</span><span style="color:var(--text3);min-width:100px;">'+r.type+'</span><span style="color:'+scol+';min-width:90px;font-weight:600;">'+stat+'</span><span style="color:var(--text2);">'+(r.patient||'—')+'</span><span style="color:var(--text3);">'+(r.eta?'ETA: '+r.eta:'')+'</span></div>'; }).join(''); return '<div class="g2"><div class="card span2"><div class="card-head"><span class="card-title">HOSPITAL MANAGEMENT — WARD OVERVIEW</span></div><div class="card-body">'+'<div class="fac-card"><div class="fac-head"><div><div class="fac-name-big">'+f.n+'</div><div class="fac-type">'+f.t+'</div></div><div class="fac-role">-> '+f.role+'</div></div>'+'<div class="fac-body">'+res('BEDS',f.free,f.beds)+res('ICU',f.icuFree,f.icu)+res('VENTILATORS',f.ventFree,f.vent)+'</div></div>'+'<div style="margin-top:12px;"><b>Ward Details:</b> '+wardRows+'</div>'+'<div style="margin-top:12px; padding:10px; background:'+(totalDemand > available ? 'var(--dbg)' : 'var(--acc-bg)')+'; border-radius:6px; font-size:13px; color:'+(totalDemand > available ? 'var(--danger)' : 'var(--acc)')+';">'+'Total Demand: <b>'+totalDemand+'</b> patients waiting | Available Beds: <b>'+available+'</b> (fixed) | '+(totalDemand > available ? '⚠ '+(totalDemand - available)+' more beds needed' : '✓ Demand can be met')+'</div></div></div>'+'<div class="card span2"><div class="card-head"><span class="card-title">ROOM AND OR TRACKING</span></div><div class="card-body scrollable">'+roomRows+'</div></div></div>'; }
   function logHTML() { var rows = IV().map(function(it){ var h = hts(it), st = ist(it); var hs = h===Infinity?'∞':(h<10?h.toFixed(1):Math.round(h))+'h'; var redis = st!=='ok'?'<button class="btn btn-sm" data-redis="'+it.item+'">REDISTRIBUTE</button>':''; return '<tr><td><span class="item-name">'+it.item+'</span></td><td>'+it.stock+' <span style="color:var(--text3)">'+it.unit+'</span></td><td class="burn">'+it.rate+'/h</td><td style="color:'+(st==='crit'?'var(--danger)':st==='low'?'var(--warn)':'var(--acc)')+'">'+hs+'</td><td><span class="pill '+st+'">'+st.toUpperCase()+'</span></td><td>'+redis+'</td></tr>'; }).join(''); return '<div class="card"><div class="card-head"><span class="card-title">LOGISTICS</span></div><div class="card-body"><table class="led-table"><thead><tr><th>Item</th><th>Stock</th><th>Burn rate</th><th>Runs out</th><th>Status</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div></div>'; }
   function wireLog(){ $('content').querySelectorAll('[data-redis]').forEach(function(el){ el.onclick = function(){ redistribute(el.getAttribute('data-redis')); }; }); }
   function pidHTML(){ var latest = patients[0]; var card = latest ? '<div class="id-card"><div class="qr-zone"><div class="qrbox" id="qrbox" data-qr="'+encodeURIComponent(JSON.stringify({id:latest.id,tri:latest.cat,inj:latest.inj,fac:latest.fac||'UNROUTED',status:latest.stage===STAGES.length-1?S().cleared:STAGES[latest.stage],icu:!!latest.icu,sys:'MEDCOM-X'}))+'"></div></div><div class="id-meta"><div class="id-big">'+latest.id+'</div><div class="id-grid"><span class="id-key">Triage</span><span class="id-val" style="color:'+tc(latest.cat)+'">'+latest.cat+' '+tl(latest.cat)+'</span><span class="id-key">Injury</span><span class="id-val">'+latest.inj+'</span><span class="id-key">Facility</span><span class="id-val">'+(latest.fac||'UNROUTED')+'</span><span class="id-key">ICU</span><span class="id-val">'+(latest.icu?'YES':'No')+'</span><span class="id-key">Status</span><span class="id-val">'+(latest.stage===STAGES.length-1?S().cleared:STAGES[latest.stage])+'</span></div></div></div>' : '<div class="empty-state">No patients logged.</div>'; return '<div class="g2"><div class="card"><div class="card-head"><span class="card-title">DIGITAL PATIENT ID</span></div><div class="card-body">'+card+'</div></div></div>'; }
@@ -898,7 +1061,7 @@ select:focus,input:focus{border-color:var(--acc);}
   ];
   function mevHTML() { var units = medevacUnits.map(function(u){ var st = u.status==='En route'?'color:var(--warn)':u.status==='Available'?'color:var(--acc)':'color:var(--text3)'; return '<div class="mev-unit"><span><b>'+u.id+'</b> - '+u.type+'</span><span style="'+st+'">'+u.status+'</span>'+(u.eta?'<span class="eta">ETA '+u.eta+'</span>':'')+(u.to?'<span style="font-size:11px;color:var(--text2)">-> '+u.to+'</span>':'')+'</div>'; }).join(''); return '<div class="g21"><div class="card"><div class="card-head"><span class="card-title">MEDEVAC ROUTE MAP</span></div><div class="card-body"><div id="mev-map" style="height:400px;"></div><div class="mev-legend"><span><span style="width:12px;height:3px;background:var(--acc);display:block;"></span> Ground route</span><span><span style="width:12px;height:3px;background:var(--warn);display:block;border-style:dashed;"></span> Air route</span><span><span style="width:8px;height:8px;border-radius:50%;background:var(--acc);display:block;box-shadow:0 0 6px var(--acc);"></span> Facility</span></div></div></div><div class="card"><div class="card-head"><span class="card-title">TRANSPORT UNITS</span></div><div class="card-body">'+units+'<div style="margin-top:12px;"><button class="btn btn-sm btn-acc" id="mev-dispatch">DISPATCH NEAREST</button></div></div></div></div>'; }
   function wireMev() { if(!window.L){ var mapDiv = document.getElementById('mev-map'); if(mapDiv) mapDiv.innerHTML = '<div style="padding:20px;color:var(--text3);">Map unavailable offline.</div>'; return; } if(!mevMap){ mevMap = L.map('mev-map', {attributionControl:false, zoomControl:true}); L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {maxZoom:18, subdomains:'abcd'}).addTo(mevMap); } else { mevMap.invalidateSize(); } var ctr = mode==='mil'?[52.40,13.30]:[52.52,13.405]; mevMap.setView(ctr, mode==='mil'?11:12); mevMarkers.forEach(function(m){ mevMap.removeLayer(m); }); mevMarkers = []; mevRoutes.forEach(function(r){ mevMap.removeLayer(r); }); mevRoutes = []; var list = F(); list.forEach(function(f,i){ var pct = f.beds?Math.round(f.free/f.beds*100):0; var col = pct>40?'#2563eb':pct>15?'#d97706':'#dc2626'; var m = L.circleMarker([f.lat,f.lng], {radius:10, fillColor:col, color:'#fff', weight:2, fillOpacity:0.9}).bindPopup('<b>'+f.n+'</b><br>'+f.t+'<br>'+f.free+'/'+f.beds+' beds'); m.addTo(mevMap); mevMarkers.push(m); if(i>0){ var route = L.polyline([[list[0].lat,list[0].lng],[f.lat,f.lng]], {color:i===list.length-1?'#d97706':'#2563eb', weight:2, dashArray:i===list.length-1?'8,6':'', opacity:0.6}); route.addTo(mevMap); mevRoutes.push(route); } }); var db = document.getElementById('mev-dispatch'); if(db) db.onclick = function(){ var avail = medevacUnits.find(function(u){ return u.status==='Available'; }); if(!avail){ db.textContent = 'ALL DEPLOYED'; return; } var tgt = list.find(function(f){ return f.free>0; }); if(!tgt){ db.textContent = 'NO CAPACITY'; return; } avail.status = 'En route'; avail.eta = Math.round(4+Math.random()*12)+'min'; avail.to = tgt.n; setTimeout(function(){ avail.status = 'Available'; avail.eta = null; avail.to = null; if(curTab==='mev') render(); },15000); render(); }; }
-  function bedHTML() { /* same as before */ var active = patients.filter(function(p){ return p.stage < STAGES.length-1 && p.fac; }); var cleared = patients.filter(function(p){ return p.stage === STAGES.length-1; }); var totalBeds = beds.length; var occupiedBeds = beds.filter(function(b){ return b.state === 'OCCUPIED' || b.state === 'ASSIGNED'; }).length; var availableBeds = getAvailableCount(); var uncleanBeds = beds.filter(function(b){ return b.state === 'UNCLEAN'; }).length; var cleaningBeds = beds.filter(function(b){ return b.state === 'CLEANING'; }).length; var outOfServiceBeds = beds.filter(function(b){ return b.state === 'OUT_OF_SERVICE'; }).length; var avgLoS = 0, dischargeReady = 0, bottleneck = 0; active.forEach(function(p){ var mins = Math.round(5 + p.stage * 18 + Math.random() * 30); p._los = mins; if(p.stage >= 3) dischargeReady++; if(p.stage === 2) bottleneck++; }); if(active.length) avgLoS = Math.round(active.reduce(function(a,p){ return a+(p._los||0); },0)/active.length); var turnover = cleared.length > 0 ? Math.round(cleared.length/(cleared.length+active.length)*100) : 0; var totalDemand = getTotalDemand(); var demandVsAvail = totalDemand > availableBeds ? '⚠ Demand exceeds available' : '✓ Demand can be met'; var kpis = '<div class="bf-kpi">'+'<div class="bf-kpi-card"><div class="kl">TOTAL BEDS</div><div class="kv">'+totalBeds+'</div></div>'+'<div class="bf-kpi-card"><div class="kl">OCCUPIED</div><div class="kv" style="color:#dc2626;">'+occupiedBeds+'</div></div>'+'<div class="bf-kpi-card"><div class="kl">AVAILABLE (FIXED)</div><div class="kv" style="color:#2563eb;">'+availableBeds+'</div></div>'+'<div class="bf-kpi-card"><div class="kl">DEMAND</div><div class="kv" style="color:'+(totalDemand>0?'var(--warn)':'var(--acc)')+';">'+totalDemand+'</div></div>'+'<div class="bf-kpi-card"><div class="kl">DEMAND vs AVAILABLE</div><div class="kv" style="font-size:16px; color:'+(totalDemand > availableBeds ? 'var(--danger)' : 'var(--acc)')+';">'+demandVsAvail+'</div></div>'+'<div class="bf-kpi-card"><div class="kl">AVG LENGTH OF STAY</div><div class="kv">'+avgLoS+' min</div></div>'+'</div>'; var hdr = '<div class="bf-row" style="background:var(--bg2);border-color:var(--line2);font-size:11px;color:var(--text3);letter-spacing:.08em;text-transform:uppercase;"><span>Patient</span><span>Progress</span><span>LoS</span><span>Stage</span><span>Facility</span><span>Flag</span></div>'; var rows = active.slice(0,12).map(function(p){ var pct = Math.round(p.stage/(STAGES.length-1)*100); var col = pct>=75?'var(--acc)':pct>=50?'var(--warn)':'var(--danger)'; var flag = p.stage>=3?'<span class="discharge-flag">READY</span>':''; return '<div class="bf-row"><span class="pid-badge">'+p.id+'</span><span><div class="bf-bar-wrap"><div class="bf-bar" style="width:'+pct+'%;background:'+col+'"></div></div></span><span style="color:var(--text2)">'+(p._los||0)+'m</span><span class="stage-badge">'+(p.stage===STAGES.length-1?S().cleared:STAGES[p.stage])+'</span><span style="font-size:11px;color:var(--text2)">'+(p.fac||'—')+'</span><span>'+flag+'</span></div>'; }).join('') || '<div class="empty-state">No active patients with assigned beds.</div>'; return '<div class="card"><div class="card-head"><span class="card-title">BED FLOW — TURNOVER AND DISCHARGE TRACKING</span><span style="font-size:11px;color:var(--text3);">Updated from Bed Admin</span></div><div class="card-body">'+kpis+hdr+rows+'<div style="margin-top:14px;font-size:11px;color:var(--text3);">Tracks patient progression through care stages. Flags discharge-ready patients to reduce bottlenecks and improve bed turnover. Bed status synced with Bed Admin module.</div></div></div>'+'<div class="g2" style="margin-top:16px;">'+'<div class="card"><div class="card-head"><span class="card-title">LENGTH OF STAY DISTRIBUTION</span></div><div class="card-body" style="height:220px;position:relative"><canvas id="chart-los"></canvas></div></div>'+'<div class="card"><div class="card-head"><span class="card-title">BED TURNOVER TREND</span></div><div class="card-body" style="height:220px;position:relative"><canvas id="chart-turnover"></canvas></div></div>'+'<div class="card"><div class="card-head"><span class="card-title">WAIT TIME HISTOGRAM</span></div><div class="card-body" style="height:220px;position:relative"><canvas id="chart-wait-hist"></canvas></div></div>'+'<div class="card"><div class="card-head"><span class="card-title">BED OPTIMIZATION FORECAST</span></div><div class="card-body" style="height:220px;position:relative"><canvas id="chart-bed-forecast"></canvas></div></div>'+'<div class="card"><div class="card-head"><span class="card-title">BED STATUS BREAKDOWN</span></div><div class="card-body" style="height:220px;position:relative"><canvas id="chart-bed-breakdown"></canvas></div></div>'+'</div>'; }
+  function bedHTML() { var active = patients.filter(function(p){ return p.stage < STAGES.length-1 && p.fac; }); var cleared = patients.filter(function(p){ return p.stage === STAGES.length-1; }); var totalBeds = beds.length; var occupiedBeds = beds.filter(function(b){ return b.state === 'OCCUPIED' || b.state === 'ASSIGNED'; }).length; var availableBeds = getAvailableCount(); var uncleanBeds = beds.filter(function(b){ return b.state === 'UNCLEAN'; }).length; var cleaningBeds = beds.filter(function(b){ return b.state === 'CLEANING'; }).length; var outOfServiceBeds = beds.filter(function(b){ return b.state === 'OUT_OF_SERVICE'; }).length; var reservedBeds = beds.filter(function(b){ return b.state === 'RESERVED'; }).length; var avgLoS = 0, dischargeReady = 0, bottleneck = 0; active.forEach(function(p){ var mins = Math.round(5 + p.stage * 18 + Math.random() * 30); p._los = mins; if(p.stage >= 3) dischargeReady++; if(p.stage === 2) bottleneck++; }); if(active.length) avgLoS = Math.round(active.reduce(function(a,p){ return a+(p._los||0); },0)/active.length); var turnover = cleared.length > 0 ? Math.round(cleared.length/(cleared.length+active.length)*100) : 0; var totalDemand = getTotalDemand(); var demandVsAvail = totalDemand > availableBeds ? '⚠ Demand exceeds available' : '✓ Demand can be met'; var kpis = '<div class="bf-kpi">'+'<div class="bf-kpi-card"><div class="kl">TOTAL BEDS</div><div class="kv">'+totalBeds+'</div></div>'+'<div class="bf-kpi-card"><div class="kl">OCCUPIED</div><div class="kv" style="color:#dc2626;">'+occupiedBeds+'</div></div>'+'<div class="bf-kpi-card"><div class="kl">RESERVED</div><div class="kv" style="color:#8b5cf6;">'+reservedBeds+'</div></div>'+'<div class="bf-kpi-card"><div class="kl">AVAILABLE (FIXED)</div><div class="kv" style="color:#2563eb;">'+availableBeds+'</div></div>'+'<div class="bf-kpi-card"><div class="kl">DEMAND</div><div class="kv" style="color:'+(totalDemand>0?'var(--warn)':'var(--acc)')+';">'+totalDemand+'</div></div>'+'<div class="bf-kpi-card"><div class="kl">DEMAND vs AVAILABLE</div><div class="kv" style="font-size:16px; color:'+(totalDemand > availableBeds ? 'var(--danger)' : 'var(--acc)')+';">'+demandVsAvail+'</div></div>'+'<div class="bf-kpi-card"><div class="kl">AVG LENGTH OF STAY</div><div class="kv">'+avgLoS+' min</div></div>'+'</div>'; var hdr = '<div class="bf-row" style="background:var(--bg2);border-color:var(--line2);font-size:11px;color:var(--text3);letter-spacing:.08em;text-transform:uppercase;"><span>Patient</span><span>Progress</span><span>LoS</span><span>Stage</span><span>Facility</span><span>Flag</span></div>'; var rows = active.slice(0,12).map(function(p){ var pct = Math.round(p.stage/(STAGES.length-1)*100); var col = pct>=75?'var(--acc)':pct>=50?'var(--warn)':'var(--danger)'; var flag = p.stage>=3?'<span class="discharge-flag">READY</span>':''; return '<div class="bf-row"><span class="pid-badge">'+p.id+'</span><span><div class="bf-bar-wrap"><div class="bf-bar" style="width:'+pct+'%;background:'+col+'"></div></div></span><span style="color:var(--text2)">'+(p._los||0)+'m</span><span class="stage-badge">'+(p.stage===STAGES.length-1?S().cleared:STAGES[p.stage])+'</span><span style="font-size:11px;color:var(--text2)">'+(p.fac||'—')+'</span><span>'+flag+'</span></div>'; }).join('') || '<div class="empty-state">No active patients with assigned beds.</div>'; return '<div class="card"><div class="card-head"><span class="card-title">BED FLOW — TURNOVER AND DISCHARGE TRACKING</span><span style="font-size:11px;color:var(--text3);">Updated from Bed Admin</span></div><div class="card-body">'+kpis+hdr+rows+'<div style="margin-top:14px;font-size:11px;color:var(--text3);">Tracks patient progression through care stages. Flags discharge-ready patients to reduce bottlenecks and improve bed turnover. Bed status synced with Bed Admin module.</div></div></div>'+'<div class="g2" style="margin-top:16px;">'+'<div class="card"><div class="card-head"><span class="card-title">LENGTH OF STAY DISTRIBUTION</span></div><div class="card-body" style="height:220px;position:relative"><canvas id="chart-los"></canvas></div></div>'+'<div class="card"><div class="card-head"><span class="card-title">BED TURNOVER TREND</span></div><div class="card-body" style="height:220px;position:relative"><canvas id="chart-turnover"></canvas></div></div>'+'<div class="card"><div class="card-head"><span class="card-title">WAIT TIME HISTOGRAM</span></div><div class="card-body" style="height:220px;position:relative"><canvas id="chart-wait-hist"></canvas></div></div>'+'<div class="card"><div class="card-head"><span class="card-title">BED OPTIMIZATION FORECAST</span></div><div class="card-body" style="height:220px;position:relative"><canvas id="chart-bed-forecast"></canvas></div></div>'+'<div class="card"><div class="card-head"><span class="card-title">BED STATUS BREAKDOWN</span></div><div class="card-body" style="height:220px;position:relative"><canvas id="chart-bed-breakdown"></canvas></div></div>'+'</div>'; }
   function staffHTML() { var rows = staff.map(function(s){ var pct = Math.round(s.pts/s.max*100); var cls = s.pts>=s.max?'danger':s.pts>s.max*0.7?'warn':''; var flag = s.pts>=s.max?'OVERLOADED':s.pts>s.max*0.7?'FATIGUE RISK':'OK'; return '<div class="fac-card"><div class="fac-head"><div><div class="fac-name-big">'+s.name+'</div><div class="fac-type">'+s.role+' - '+s.spec+'</div></div><div class="fac-role" style="color:var(--'+(cls||'acc')+')">'+flag+'</div></div><div style="padding:12px 14px"><div style="display:flex;justify-content:space-between;font-size:11px"><span>Patients</span><span style="color:var(--text2)">'+s.pts+' / '+s.max+'</span></div><div class="res-bar"><div style="width:'+pct+'%;background:'+(cls?'var(--'+cls+')':'var(--acc)')+'"></div></div></div></div>'; }).join(''); return '<div class="g2"><div class="card span2"><div class="card-head"><span class="card-title">STAFF FATIGUE</span></div><div class="card-body">'+rows+'</div></div></div>'; }
   function whatifHTML() { return '<div class="g2"><div class="card span2"><div class="card-head"><span class="card-title">WHAT-IF SIMULATOR</span></div><div class="card-body"><div class="form-row"><div><label class="lbl">Scenario</label><select id="wi-type"><option value="surge">Additional casualties</option><option value="offline">Facility offline</option></select></div><div><label class="lbl">Parameter</label><select id="wi-param"><option value="8">8 casualties</option><option value="16">16 casualties</option></select></div><button class="btn btn-acc" id="wi-run" style="margin-top:19px">RUN</button></div><div id="wi-result" style="margin-top:16px"></div></div></div></div>'; }
   function wireWhatif(){ document.getElementById('wi-run').onclick = function(){ var n = parseInt(document.getElementById('wi-param').value); var f = 0; for(var i=0;i<n;i++){ var cats=['T1','T2','T2','T3']; var cat=cats[i%4]; var idx=bestF(cat,1,cat==='T1',-1); if(idx===null) f++; else { var list=F(); list[idx].free--; if(cat==='T1'&&list[idx].icuFree>0) list[idx].icuFree--; } } var list=F(), tb=0, tf=0; list.forEach(function(f){ tb+=f.beds; tf+=f.free; }); var cp = tb?Math.round(tf/tb*100):0; document.getElementById('wi-result').innerHTML = '<div class="card" style="border-color:var(--warn)"><div class="card-body"><b>'+n+' casualties</b> - '+((n-f)+' routed')+' - '+f+' escalated<br>Remaining capacity: '+cp+'%</div></div>'; }; }
@@ -910,34 +1073,42 @@ select:focus,input:focus{border-color:var(--acc);}
   function crlHTML() { var activeCount = civilAssets.filter(function(a){ return a.status==='active'; }).length; var totalAvail = civilAssets.reduce(function(s,a){ return s+a.availKg; },0); var aircraft = civilAssets.filter(function(a){ return a.type==='aircraft'; }); var ships = civilAssets.filter(function(a){ return a.type==='ship'; }); var filtered = crlFilter ? civilAssets.filter(function(a){ return a.op.toLowerCase().indexOf(crlFilter.toLowerCase())>=0 || a.id.toLowerCase().indexOf(crlFilter.toLowerCase())>=0; }) : civilAssets; var assetRows = filtered.slice(0,20).map(function(a){ var icon = a.type==='aircraft'?'✈':'🚢'; var scol = a.status==='active'?'var(--acc)':a.status==='reserve'?'var(--warn)':'var(--text3)'; return '<div style="display:grid;grid-template-columns:24px 90px 1fr 100px 70px 80px auto;align-items:center;gap:10px;padding:8px 12px;border:1px solid var(--line);margin-bottom:4px;background:var(--panel2);font-size:12.5px"><span style="font-size:16px;text-align:center">'+icon+'</span><span class="pid-badge">'+a.id+'</span><span style="font-weight:700">'+a.op+' <span style="color:var(--text3);font-weight:400;font-size:11px">'+a.from+' -> '+a.to+'</span></span><span style="color:'+scol+';font-size:11px">'+a.status.toUpperCase()+' · '+Math.round(a.availKg/1000)+'t</span><span class="pill ok" style="font-size:9px">'+a.agree+'</span><span style="font-size:10px;color:var(--text3)">ready</span><button class="btn btn-sm btn-acc" data-task="'+a.id+'" style="white-space:nowrap">TASK</button></div>'; }).join('') || '<div class="empty-state">No assets match.</div>'; return '<div class="g2"><div class="card span2"><div class="card-head"><span class="card-title">CIVIL RESERVE LOGISTICS — ASSET REGISTRY</span><span style="font-size:11px;color:var(--text3)">'+aircraft.length+' aircraft · '+ships.length+' ships · '+activeCount+' active · '+Math.round(totalAvail/1000)+'t available</span></div><div style="padding:10px 16px;border-bottom:1px solid var(--line);display:flex;gap:10px;align-items:center"><input type="text" id="crl-search" value="'+crlFilter+'" placeholder="Search..." style="flex:1;padding:8px 12px;font-size:12px;background:var(--bg);color:var(--text);border:1px solid var(--line2)"><button class="btn btn-sm btn-acc" id="crl-search-go">SEARCH</button>'+(crlFilter?'<button class="btn btn-sm" id="crl-clear">CLEAR</button>':'')+'</div><div class="card-body scrollable">'+assetRows+'</div></div><div class="card span2"><div class="card-head"><span class="card-title">CRL PERFORMANCE</span></div><div class="card-body"><div class="metrics" style="border:none;margin:-8px -4px 0">'+mc('ASSETS ACTIVE',activeCount,'')+mc('CAPACITY AVAIL',Math.round(totalAvail/1000)+'t','')+'</div></div></div></div>'; }
   function wireCrl() { var searchInput = document.getElementById('crl-search'); if(searchInput){ searchInput.onkeydown = function(e){ if(e.key==='Enter'){ crlFilter = this.value.trim(); render(); } }; } var goBtn = document.getElementById('crl-search-go'); if(goBtn) goBtn.onclick = function(){ crlFilter = document.getElementById('crl-search').value.trim(); render(); }; var clrBtn = document.getElementById('crl-clear'); if(clrBtn) clrBtn.onclick = function(){ crlFilter = ''; render(); }; document.querySelectorAll('[data-task]').forEach(function(el){ el.onclick = function(){ logA('CRL-TASK','Tasked asset '+el.getAttribute('data-task')); render(); }; }); }
 
-  // ─── BED ADMIN HTML ───
+  // ─── BED ADMIN HTML ─── (with reserve features)
   function bedAdminHTML() {
     var totalDemand = getTotalDemand();
     var occupied = getOccupiedCount();
     var available = getAvailableCount();
+    var reserved = getReservedCount();
     var demandPct = Math.min(100, Math.round(totalDemand / TOTAL_CAPACITY * 100));
     var occPct = Math.round(occupied / TOTAL_CAPACITY * 100);
     var availPct = Math.round(available / TOTAL_CAPACITY * 100);
+    var reservePct = Math.round(reserved / TOTAL_CAPACITY * 100);
     var demandColor = totalDemand > available ? 'var(--danger)' : 'var(--acc)';
     var wardSummary = wardData.map(function(w) {
       var wardBeds = beds.filter(function(b){ return b.ward === w.name; });
       var occ = wardBeds.filter(function(b){ return b.state === 'OCCUPIED' || b.state === 'ASSIGNED'; }).length;
-      var pct = w.beds ? Math.round(occ/w.beds*100) : 0;
+      var res = wardBeds.filter(function(b){ return b.state === 'RESERVED'; }).length;
+      var pct = w.beds ? Math.round((occ+res)/w.beds*100) : 0;
       var col = pct > 80 ? 'var(--danger)' : pct > 60 ? 'var(--warn)' : 'var(--acc)';
-      return '<div style="display:flex; justify-content:space-between; padding:4px 0; border-bottom:1px solid var(--line); font-size:12px;"><span><b>'+w.name+'</b> <span style="color:var(--text3);">('+w.beds+' beds)</span></span><span>Demand: <b style="color:var(--warn);">'+w.demand+'</b> waiting</span><span>Occupied: <b style="color:'+col+';">'+occ+'</b> / '+w.beds+'</span><span style="color:'+col+';">'+pct+'%</span></div>';
+      return '<div style="display:flex; justify-content:space-between; padding:4px 0; border-bottom:1px solid var(--line); font-size:12px;"><span><b>'+w.name+'</b> <span style="color:var(--text3);">('+w.beds+' beds)</span></span><span>Demand: <b style="color:var(--warn);">'+w.demand+'</b> waiting</span><span>Occupied: <b style="color:'+col+';">'+occ+'</b> / '+w.beds+'</span>'+(res>0?'<span>Reserved: <b style="color:#8b5cf6;">'+res+'</b></span>':'')+'<span style="color:'+col+';">'+pct+'%</span></div>';
     }).join('');
+    var queueHtml = '<div style="margin-top:12px;"><div style="font-size:11px;font-weight:700;color:var(--text2);letter-spacing:.08em;text-transform:uppercase;margin-bottom:6px;">RESERVATION QUEUE</div><div id="reservation-queue-display"></div></div>';
+
     return '<div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px;">'+
       '<div class="card" style="border-color: '+(totalDemand > available ? 'var(--danger)' : 'var(--acc)')+';">'+
-        '<div class="card-head"><span class="card-title" style="color: '+(totalDemand > available ? 'var(--danger)' : 'var(--acc)')+';">DEMAND vs AVAILABLE BEDS</span><span style="font-size:11px; color:var(--text3);">'+totalDemand+' patients waiting · '+available+' beds available (fixed)</span></div>'+
+        '<div class="card-head"><span class="card-title" style="color: '+(totalDemand > available ? 'var(--danger)' : 'var(--acc)')+';">DEMAND vs AVAILABLE BEDS</span><span style="font-size:11px; color:var(--text3);">'+totalDemand+' patients waiting · '+available+' beds available</span></div>'+
         '<div class="card-body">'+
-          '<div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px;">'+
-            '<div style="text-align:center; padding:8px; background:var(--panel2); border-radius:6px; border:1px solid var(--line);"><div style="font-size:28px; font-weight:700; color:var(--warn);">'+totalDemand+'</div><div style="font-size:10px; color:var(--text3); text-transform:uppercase;">Current Demand</div></div>'+
-            '<div style="text-align:center; padding:8px; background:var(--panel2); border-radius:6px; border:1px solid var(--line);"><div style="font-size:28px; font-weight:700; color:'+(available >= totalDemand ? 'var(--acc)' : 'var(--danger)')+';">'+available+'</div><div style="font-size:10px; color:var(--text3); text-transform:uppercase;">Available Beds (Fixed)</div></div>'+
+          '<div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; margin-bottom:12px;">'+
+            '<div style="text-align:center; padding:8px; background:var(--panel2); border-radius:6px; border:1px solid var(--line);"><div style="font-size:28px; font-weight:700; color:var(--warn);">'+totalDemand+'</div><div style="font-size:10px; color:var(--text3); text-transform:uppercase;">Demand</div></div>'+
+            '<div style="text-align:center; padding:8px; background:var(--panel2); border-radius:6px; border:1px solid var(--line);"><div style="font-size:28px; font-weight:700; color:#8b5cf6;">'+reserved+'</div><div style="font-size:10px; color:var(--text3); text-transform:uppercase;">Reserved</div></div>'+
+            '<div style="text-align:center; padding:8px; background:var(--panel2); border-radius:6px; border:1px solid var(--line);"><div style="font-size:28px; font-weight:700; color:'+(available >= totalDemand ? 'var(--acc)' : 'var(--danger)')+';">'+available+'</div><div style="font-size:10px; color:var(--text3); text-transform:uppercase;">Available (Fixed)</div></div>'+
           '</div>'+
           '<div style="margin-bottom:8px;"><div style="display:flex; justify-content:space-between; font-size:11px; color:var(--text3);"><span>Demand</span><span>'+demandPct+'% of total beds</span></div><div class="demand-bar"><div class="fill" style="width:'+demandPct+'%; background:'+demandColor+';"></div><div class="label">'+totalDemand+' patients waiting</div></div></div>'+
           '<div style="margin-bottom:8px;"><div style="display:flex; justify-content:space-between; font-size:11px; color:var(--text3);"><span>Occupied</span><span>'+occPct+'% of total beds</span></div><div class="demand-bar"><div class="fill" style="width:'+occPct+'%; background:#dc2626;"></div><div class="label">'+occupied+' beds occupied</div></div></div>'+
+          '<div style="margin-bottom:8px;"><div style="display:flex; justify-content:space-between; font-size:11px; color:var(--text3);"><span>Reserved</span><span>'+reservePct+'% of total beds</span></div><div class="demand-bar"><div class="fill" style="width:'+reservePct+'%; background:#8b5cf6;"></div><div class="label">'+reserved+' beds reserved</div></div></div>'+
           '<div><div style="display:flex; justify-content:space-between; font-size:11px; color:var(--text3);"><span>Available (fixed)</span><span>'+availPct+'% of total beds</span></div><div class="demand-bar"><div class="fill" style="width:'+availPct+'%; background:#2563eb;"></div><div class="label">'+available+' beds available (fixed)</div></div></div>'+
           (totalDemand > available ? '<div style="margin-top:10px; padding:8px; background:var(--dbg); border-radius:6px; font-size:12px; color:var(--danger);">⚠ Demand exceeds available beds! '+ (totalDemand - available) + ' more beds needed.</div>' : '<div style="margin-top:10px; padding:8px; background:var(--acc-bg); border-radius:6px; font-size:12px; color:var(--acc);">✓ Demand can be met with current available beds.</div>')+
+          queueHtml+
         '</div>'+
       '</div>'+
       '<div class="card" style="border-color: var(--danger);">'+
@@ -965,12 +1136,25 @@ select:focus,input:focus{border-color:var(--acc);}
       '</div>'+
     '</div>'+
     '<div class="card" style="margin-bottom:16px;">'+
-      '<div class="card-head"><span class="card-title">BED GRID — REAL-TIME STATUS</span><div style="display:flex; gap:12px; font-size:10px; align-items:center; flex-wrap:wrap;"><span><span style="display:inline-block; width:12px; height:12px; background:#dc2626; border-radius:2px;"></span> Occupied</span><span><span style="display:inline-block; width:12px; height:12px; background:#d97706; border-radius:2px;"></span> Unclean</span><span><span style="display:inline-block; width:12px; height:12px; background:#fbbf24; border-radius:2px;"></span> Cleaning</span><span><span style="display:inline-block; width:12px; height:12px; background:#2563eb; border-radius:2px;"></span> Available</span><span><span style="display:inline-block; width:12px; height:12px; background:#8b5cf6; border-radius:2px;"></span> Assigned</span><span style="border-left:1px solid var(--line); padding-left:12px;">Mismatch: <span id="mismatch-badge" style="font-weight:700; color:var(--acc);">0</span></span></div></div>'+
+      '<div class="card-head"><span class="card-title">BED GRID — REAL-TIME STATUS</span><div style="display:flex; gap:12px; font-size:10px; align-items:center; flex-wrap:wrap;"><span><span style="display:inline-block; width:12px; height:12px; background:#dc2626; border-radius:2px;"></span> Occupied</span><span><span style="display:inline-block; width:12px; height:12px; background:#d97706; border-radius:2px;"></span> Unclean</span><span><span style="display:inline-block; width:12px; height:12px; background:#fbbf24; border-radius:2px;"></span> Cleaning</span><span><span style="display:inline-block; width:12px; height:12px; background:#2563eb; border-radius:2px;"></span> Available</span><span><span style="display:inline-block; width:12px; height:12px; background:#8b5cf6; border-radius:2px;"></span> Reserved/Assigned</span><span style="border-left:1px solid var(--line); padding-left:12px;">Mismatch: <span id="mismatch-badge" style="font-weight:700; color:var(--acc);">0</span></span></div></div>'+
       '<div class="card-body"><div style="margin-bottom:12px; font-size:12px; color:var(--text3);">Ward summary:</div><div style="margin-bottom:12px;">'+wardSummary+'</div><div id="bed-grid" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(140px, 1fr)); gap:10px;"></div></div>'+
     '</div>'+
     '<div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">'+
-      '<div class="card"><div class="card-head"><span class="card-title">BED ADMIN</span><span style="font-size:11px; color:var(--text3);">Manual override controls</span></div><div class="card-body"><div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;"><div><label class="lbl">Select Bed</label><select id="admin-bed-select" style="font-size:13px; padding:8px; width:100%;"></select></div><div><label class="lbl">Action</label><select id="admin-action" style="font-size:13px; padding:8px; width:100%;"><option value="assign">ASSIGN PATIENT</option><option value="clean">MARK FOR CLEANING</option><option value="available">MARK AVAILABLE</option><option value="occupy">MARK OCCUPIED</option><option value="reserve">RESERVE</option><option value="out">OUT OF SERVICE</option></select></div></div><button class="btn btn-acc" id="admin-execute" style="width:100%; margin-top:10px;">EXECUTE ADMIN ACTION</button><div id="admin-feedback" style="margin-top:8px; font-size:12px; color:var(--text2);"></div></div></div>'+
-      '<div class="card"><div class="card-head"><span class="card-title">STATE CHANGE TIMELINE</span><span style="font-size:11px; color:var(--text3);" id="timeline-count">0 events</span></div><div class="card-body scrollable" id="timeline-container" style="max-height:300px;"><div id="timeline-entries"></div></div></div>'+
+      '<div class="card">'+
+        '<div class="card-head"><span class="card-title">BED ADMIN</span><span style="font-size:11px; color:var(--text3);">Manual override controls</span></div>'+
+        '<div class="card-body">'+
+          '<div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">'+
+            '<div><label class="lbl">Select Bed</label><select id="admin-bed-select" style="font-size:13px; padding:8px; width:100%;"></select></div>'+
+            '<div><label class="lbl">Action</label><select id="admin-action" style="font-size:13px; padding:8px; width:100%;"><option value="assign">ASSIGN PATIENT</option><option value="clean">MARK FOR CLEANING</option><option value="available">MARK AVAILABLE</option><option value="occupy">MARK OCCUPIED</option><option value="reserve">RESERVE</option><option value="unreserve">UNRESERVE</option><option value="out">OUT OF SERVICE</option></select></div>'+
+          '</div>'+
+          '<button class="btn btn-acc" id="admin-execute" style="width:100%; margin-top:10px;">EXECUTE ADMIN ACTION</button>'+
+          '<div id="admin-feedback" style="margin-top:8px; font-size:12px; color:var(--text2);"></div>'+
+        '</div>'+
+      '</div>'+
+      '<div class="card">'+
+        '<div class="card-head"><span class="card-title">STATE CHANGE TIMELINE</span><span style="font-size:11px; color:var(--text3);" id="timeline-count">0 events</span></div>'+
+        '<div class="card-body scrollable" id="timeline-container" style="max-height:300px;"><div id="timeline-entries"></div></div>'+
+      '</div>'+
     '</div>';
   }
 
@@ -979,6 +1163,7 @@ select:focus,input:focus{border-color:var(--acc);}
     updateBedDropdowns();
     renderBedTimeline();
     updateBedMetrics();
+    updateReservationDisplay();
     document.getElementById('iot-simulate').onclick = function() {
       var bedId = document.getElementById('iot-bed-select').value;
       var action = document.getElementById('iot-action').value;
@@ -1002,6 +1187,7 @@ select:focus,input:focus{border-color:var(--acc);}
         } else if (bed.displayState === 'CLEANING' && Math.random() < 0.3) {
           bed.displayState = 'AVAILABLE';
           updateBedTimeline('AUTO-CLEAN: '+bed.id+' cleaning complete (IoT)', bed.id);
+          setTimeout(function() { attemptAutoReserveOnAvailable(bed.id); }, 100);
         } else if (bed.displayState === 'AVAILABLE' && Math.random() < 0.2) {
           bed.displayState = 'OCCUPIED';
           bed.patientId = 'PT-'+String(Math.floor(1000 + Math.random() * 9000));
@@ -1033,6 +1219,9 @@ select:focus,input:focus{border-color:var(--acc);}
     patients = []; routeTimes = []; messages = []; suppressed = 0; seq = 1; pending = null; surgeBatch = 0;
     initStaffAndRooms();
     generateBeds();
+    // Add some patients to reservation queue
+    addToReservationQueue('PT-0012', 'T3');
+    addToReservationQueue('PT-0015', 'T3');
     applyMode();
     render();
   }
@@ -1041,6 +1230,9 @@ select:focus,input:focus{border-color:var(--acc);}
     curTab = t;
     document.querySelectorAll('.tab-btn').forEach(function(b){ b.classList.toggle('on', b.getAttribute('data-tab')===t); });
     render();
+    if(t === 'bed-admin') {
+      setTimeout(function() { updateReservationDisplay(); }, 100);
+    }
   }
   document.querySelectorAll('.tab-btn').forEach(function(b){ b.onclick = function(){ setTab(b.getAttribute('data-tab')); }; });
 
@@ -1050,50 +1242,36 @@ select:focus,input:focus{border-color:var(--acc);}
   function clock(){ $('sb-clock').textContent = new Date().toTimeString().slice(0,8)+' Z'; }
   setInterval(clock,1000); clock();
 
-  // ─── WALL MODE ─── (with new charts)
+  // ─── WALL MODE ─── (with reserve stats)
   var wallChartInstances = {};
 
   function renderWallCharts() {
     if (!window.Chart) return;
     var stats = getDiagnosisStats();
-
-    // Destroy old wall charts
     for (var key in wallChartInstances) {
       if (wallChartInstances[key]) {
         wallChartInstances[key].destroy();
         delete wallChartInstances[key];
       }
     }
-
-    // Gender Pie
     var genderCtx = document.getElementById('wall-gender-chart');
     if (genderCtx) {
       wallChartInstances['gender'] = new Chart(genderCtx, {
         type: 'pie',
-        data: {
-          labels: ['Male', 'Female'],
-          datasets: [{ data: [stats.genders.Male, stats.genders.Female], backgroundColor: ['#2563eb', '#ec4899'], borderWidth: 0 }]
-        },
+        data: { labels: ['Male', 'Female'], datasets: [{ data: [stats.genders.Male, stats.genders.Female], backgroundColor: ['#2563eb', '#ec4899'], borderWidth: 0 }] },
         options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { color: '#1e293b', font: { size: 11 } } } } }
       });
     }
-
-    // Age distribution bar
     var ageCtx = document.getElementById('wall-age-chart');
     if (ageCtx) {
       var ageLabels = Object.keys(stats.ageGroups);
       var ageData = Object.values(stats.ageGroups);
       wallChartInstances['age'] = new Chart(ageCtx, {
         type: 'bar',
-        data: {
-          labels: ageLabels,
-          datasets: [{ label: 'Patients', data: ageData, backgroundColor: ['#60a5fa','#3b82f6','#2563eb','#1d4ed8','#1e40af'], borderRadius: 4 }]
-        },
+        data: { labels: ageLabels, datasets: [{ label: 'Patients', data: ageData, backgroundColor: ['#60a5fa','#3b82f6','#2563eb','#1d4ed8','#1e40af'], borderRadius: 4 }] },
         options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
       });
     }
-
-    // Diagnosis bar (top 5)
     var diagCtx = document.getElementById('wall-diagnosis-chart');
     if (diagCtx) {
       var sortedDiag = Object.entries(stats.diagnosisCount).sort(function(a,b){ return b[1] - a[1]; }).slice(0,6);
@@ -1102,25 +1280,17 @@ select:focus,input:focus{border-color:var(--acc);}
       var colors = ['#dc2626','#d97706','#2563eb','#059669','#8b5cf6','#ec4899'];
       wallChartInstances['diagnosis'] = new Chart(diagCtx, {
         type: 'bar',
-        data: {
-          labels: diagLabels,
-          datasets: [{ label: 'Patients', data: diagData, backgroundColor: colors.slice(0, diagLabels.length), borderRadius: 4 }]
-        },
+        data: { labels: diagLabels, datasets: [{ label: 'Patients', data: diagData, backgroundColor: colors.slice(0, diagLabels.length), borderRadius: 4 }] },
         options: { responsive: true, maintainAspectRatio: false, indexAxis: 'y', plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true, ticks: { stepSize: 1 } } } }
       });
     }
-
-    // Triage distribution
     var triageCtx = document.getElementById('wall-triage-chart');
     if (triageCtx) {
       var triLabels = ['T1', 'T2', 'T3', 'T4'];
       var triData = [stats.triageCount.T1 || 0, stats.triageCount.T2 || 0, stats.triageCount.T3 || 0, stats.triageCount.T4 || 0];
       wallChartInstances['triage'] = new Chart(triageCtx, {
         type: 'doughnut',
-        data: {
-          labels: triLabels,
-          datasets: [{ data: triData, backgroundColor: ['#dc2626','#d97706','#2563eb','#94a3b8'], borderWidth: 0 }]
-        },
+        data: { labels: triLabels, datasets: [{ data: triData, backgroundColor: ['#dc2626','#d97706','#2563eb','#94a3b8'], borderWidth: 0 }] },
         options: { responsive: true, maintainAspectRatio: false, cutout: '60%', plugins: { legend: { position: 'bottom', labels: { color: '#1e293b', font: { size: 11 } } } } }
       });
     }
@@ -1135,7 +1305,6 @@ select:focus,input:focus{border-color:var(--acc);}
   $('wall-close').onclick = function(){
     $('wall-overlay').style.display = 'none';
     if(window._wallInterval) clearInterval(window._wallInterval);
-    // Destroy wall charts on close
     for (var key in wallChartInstances) {
       if (wallChartInstances[key]) {
         wallChartInstances[key].destroy();
@@ -1153,21 +1322,20 @@ select:focus,input:focus{border-color:var(--acc);}
     var bedMismatch = countMismatches();
     var totalDemand = getTotalDemand();
     var available = getAvailableCount();
+    var reserved = getReservedCount();
     var stats = getDiagnosisStats();
 
-    // Build wall content with charts
     var content = '<div style="display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:12px; margin-bottom:12px;">'+
       '<div style="background:var(--panel);border:1px solid var(--line);padding:16px;"><div style="font-size:10px;color:var(--text3);text-transform:uppercase;">RESILIENCE</div><div style="font-size:32px;font-weight:700;color:'+(rs>=80?'var(--acc)':rs>=50?'var(--warn)':'var(--danger)')+'">'+rs+'/100</div></div>'+
       '<div style="background:var(--panel);border:1px solid var(--line);padding:16px;"><div style="font-size:10px;color:var(--text3);text-transform:uppercase;">CASUALTIES</div><div style="font-size:32px;font-weight:700;color:var(--acc)">'+active.length+'</div></div>'+
       '<div style="background:var(--panel);border:1px solid var(--line);padding:16px;"><div style="font-size:10px;color:var(--text3);text-transform:uppercase;">BED CAPACITY</div><div style="font-size:32px;font-weight:700;color:'+(cp>40?'var(--acc)':cp>15?'var(--warn)':'var(--danger)')+'">'+cp+'%</div></div>'+
+      '<div style="background:var(--panel);border:1px solid var(--line);padding:16px;"><div style="font-size:10px;color:var(--text3);text-transform:uppercase;">RESERVED BEDS</div><div style="font-size:32px;font-weight:700;color:#8b5cf6;">'+reserved+'</div></div>'+
       '<div style="background:var(--panel);border:1px solid var(--line);padding:16px;"><div style="font-size:10px;color:var(--text3);text-transform:uppercase;">DEMAND vs AVAILABLE</div><div style="font-size:24px;font-weight:700;color:'+(totalDemand > available ? 'var(--danger)' : 'var(--acc)')+';">'+totalDemand+' / '+available+'</div></div>'+
       '<div style="background:var(--panel);border:1px solid var(--line);padding:16px;"><div style="font-size:10px;color:var(--text3);text-transform:uppercase;">BED MISMATCH</div><div style="font-size:32px;font-weight:700;color:'+(bedMismatch>0?'var(--danger)':'var(--acc)')+'">'+bedMismatch+'</div></div>'+
       '<div style="background:var(--panel);border:1px solid var(--line);padding:16px;"><div style="font-size:10px;color:var(--text3);text-transform:uppercase;">PATIENTS</div><div style="font-size:32px;font-weight:700;color:var(--acc)">'+stats.total+'</div></div>'+
       '<div style="background:var(--panel);border:1px solid var(--line);padding:16px;"><div style="font-size:10px;color:var(--text3);text-transform:uppercase;">AVG LENGTH OF STAY</div><div style="font-size:32px;font-weight:700;color:var(--acc)">'+stats.avgLos+' days</div></div>'+
-      '<div style="background:var(--panel);border:1px solid var(--line);padding:16px;"><div style="font-size:10px;color:var(--text3);text-transform:uppercase;">GENDER</div><div style="font-size:24px;font-weight:700;color:var(--acc)">♂ '+stats.genders.Male+' / ♀ '+stats.genders.Female+'</div></div>'+
       '</div>';
 
-    // Charts grid (2x2)
     content += '<div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px;">'+
       '<div style="background:var(--panel);border:1px solid var(--line);padding:12px;"><div style="font-size:10px;color:var(--text3);text-transform:uppercase;margin-bottom:8px;">GENDER DISTRIBUTION</div><div style="height:200px;position:relative;"><canvas id="wall-gender-chart"></canvas></div></div>'+
       '<div style="background:var(--panel);border:1px solid var(--line);padding:12px;"><div style="font-size:10px;color:var(--text3);text-transform:uppercase;margin-bottom:8px;">AGE DISTRIBUTION</div><div style="height:200px;position:relative;"><canvas id="wall-age-chart"></canvas></div></div>'+
@@ -1175,7 +1343,6 @@ select:focus,input:focus{border-color:var(--acc);}
       '<div style="background:var(--panel);border:1px solid var(--line);padding:12px;"><div style="font-size:10px;color:var(--text3);text-transform:uppercase;margin-bottom:8px;">TRIAGE DISTRIBUTION</div><div style="height:200px;position:relative;"><canvas id="wall-triage-chart"></canvas></div></div>'+
       '</div>';
 
-    // Patient list table
     content += '<div style="background:var(--panel);border:1px solid var(--line);padding:12px;margin-bottom:12px;">'+
       '<div style="font-size:10px;color:var(--text3);text-transform:uppercase;margin-bottom:8px;">PATIENT LIST</div>'+
       '<div style="max-height:200px;overflow-y:auto;">'+
@@ -1186,9 +1353,8 @@ select:focus,input:focus{border-color:var(--acc);}
       '</tbody></table></div></div>';
 
     $('wall-content').innerHTML = content;
-    $('wall-updated').textContent = 'Updated: '+nowt()+' Z';
+    $('wall-updated').textContent = 'Updated: '+nowt()+' Z | Reserved: '+reserved;
 
-    // Render charts after DOM update
     setTimeout(function() { renderWallCharts(); }, 50);
   }
 
@@ -1216,6 +1382,7 @@ select:focus,input:focus{border-color:var(--acc);}
     initMode();
     setTimeout(function(){
       if(curTab==='pid') wirePID();
+      if(curTab==='bed-admin') updateReservationDisplay();
     }, 500);
   });
 
