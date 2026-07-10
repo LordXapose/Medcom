@@ -1,0 +1,1493 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>MEDCOM-X // Command Console</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+<style>
+/* ─── ALL STYLES (identical to previous) ─── */
+:root{
+  --bg:#f8f9fb; --bg2:#ffffff; --panel:#ffffff; --panel2:#f1f3f9;
+  --line:#f1f3f9; --line2:#1e293b; --line3:#cbd5e1;
+  --text:#1e293b; --text2:#64748b; --text3:#94a3b8;
+  --acc:#2563eb; --acc2:#1d4ed8; --acc-bg:#eff6ff; --acc-glow:rgba(37,99,235,.12);
+  --warn:#d97706; --wbg:rgba(245,158,11,.12); --danger:#dc2626; --dbg:rgba(239,68,68,.12);
+  --t1:#dc2626; --t2:#d97706; --t3:#2563eb; --t4:#94a3b8;
+  --speed:.4s;
+}
+html[data-mode="mil"]{
+  --bg:#f8f9fb; --bg2:#ffffff; --panel:#ffffff; --panel2:#f1f3f9;
+  --line:#fef3c7; --line2:#fde68a; --line3:#f59e0b;
+  --text:#1e293b; --text2:#92400e; --text3:#a16207;
+  --acc:#ffaa00; --acc2:#cc8800; --acc-bg:#fefce8; --acc-glow:rgba(255,170,0,.18);
+  --t1:#dc2626; --t2:#d97706; --t3:#ffaa00; --t4:#a16207;
+}
+*{box-sizing:border-box; margin:0; padding:0;}
+body{
+  background:var(--bg); color:var(--text);
+  font-family:'Inter',system-ui,sans-serif; font-size:13.5px; line-height:1.55;
+  transition:background var(--speed),color var(--speed);
+  min-height:100vh;
+}
+.sbar{display:flex; align-items:center; gap:18px; background:var(--bg2); border-bottom:1px solid var(--line); padding:6px 24px; font-size:11.5px; overflow:hidden; white-space:nowrap;}
+.sbar-id{color:var(--acc); font-weight:700; display:flex; align-items:center; gap:8px; flex:none;}
+.sbar-id::before{content:''; width:7px; height:7px; border-radius:50%; background:var(--acc); box-shadow:0 0 8px var(--acc); animation:blink 1.4s steps(2) infinite; display:block;}
+@keyframes blink{50%{opacity:.2;}}
+.sbar-pills{display:flex; gap:14px; flex:none; font-size:11px;}
+.sbar-pill{color:var(--text3);} .sbar-pill b{color:var(--text2);}
+.sbar-ticker{flex:1; overflow:hidden; font-size:11px; color:var(--text3);}
+.sbar-ticker span{display:inline-block; padding-left:100%; animation:ticker 30s linear infinite; white-space:nowrap;}
+@keyframes ticker{to{transform:translateX(-100%);}}
+.sbar-clock{font-family:'Inter',system-ui,sans-serif; font-size:11px; letter-spacing:.08em; color:var(--text2); flex:none;}
+.hdr{display:flex; align-items:center; justify-content:space-between; padding:14px 24px; border-bottom:2px solid var(--line2); background:var(--bg2); gap:14px; flex-wrap:wrap;}
+.brand{display:flex; align-items:center; gap:12px;}
+.brand-mark{width:36px; height:36px; border:1.5px solid var(--acc); display:flex; align-items:center; justify-content:center; font-weight:900; font-size:12px; color:var(--acc); box-shadow:0 0 14px var(--acc-glow) inset;}
+.brand-txt .bname{font-size:16px; font-weight:700; letter-spacing:.12em;}
+.brand-txt .bsub{font-size:10.5px; color:var(--text3); letter-spacing:.08em; text-transform:uppercase; margin-top:2px;}
+.hdr-right{display:flex; align-items:center; gap:14px;}
+.nav-link{font-size:11px; color:var(--text3); text-decoration:none; letter-spacing:.07em; padding:4px 8px; border:1px solid transparent;}
+.nav-link:hover{border-color:var(--line2); color:var(--text2);}
+.toggle{display:flex; border:1px solid var(--line2);}
+.toggle button{border:none; background:transparent; color:var(--text3); font-size:11px; letter-spacing:.1em; padding:7px 16px; cursor:pointer; transition:background .18s,color .18s;}
+.toggle button.on{background:var(--acc); color:var(--bg); font-weight:700; box-shadow:0 0 16px var(--acc-glow);}
+.metrics{display:grid; grid-template-columns:repeat(6,1fr); border-bottom:1px solid var(--line2);}
+@media(max-width:900px){.metrics{grid-template-columns:repeat(3,1fr);}}
+.metric{padding:14px 18px; border-right:1px solid var(--line); display:flex; flex-direction:column; gap:4px; background:var(--bg2);}
+.metric:last-child{border-right:none;}
+.m-label{font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:var(--text3);}
+.m-value{font-size:24px; font-weight:700; color:var(--acc); line-height:1.1;}
+.m-value.warn{color:var(--warn); text-shadow:0 0 12px rgba(245,200,66,.25);}
+.m-value.danger{color:var(--danger); text-shadow:0 0 12px rgba(255,68,68,.25);}
+.sidebar{width:200px;flex:none;background:#ffffff;border-right:1px solid var(--line);display:flex;flex-direction:column;overflow-y:auto;}
+.tab-btn{display:flex;align-items:center;gap:8px;width:100%;border:none;border-bottom:1px solid #f0f2f5;background:transparent;color:#64748b;font-size:13px;padding:11px 16px;cursor:pointer;text-align:left;transition:all .15s;letter-spacing:.01em;white-space:nowrap;}
+.tab-btn:last-child{border-bottom:none;}
+.tab-btn:hover{background:#f1f5f9;color:#1e293b;padding-left:18px;}
+.tab-btn.on{background:#eff6ff;color:#2563eb;border-left:3px solid #2563eb;font-weight:600;padding-left:13px;}
+.tab-icon{font-size:16px;width:22px;text-align:center;flex:none;}
+@media(max-width:900px){.sidebar{width:56px;} .sidebar .tab-btn span:not(.tab-icon){display:none;} .sidebar>div:last-child{display:none;}}
+.content{padding:20px 24px; min-height:calc(100vh - 240px);}
+.g2{display:grid; grid-template-columns:1fr 1fr; gap:16px;}
+.g21{display:grid; grid-template-columns:1.2fr 1fr; gap:16px;}
+.g3{display:grid; grid-template-columns:1.4fr 1fr 1fr; gap:16px;}
+.span2{grid-column:1/-1;}
+@media(max-width:900px){.g2,.g21,.g3{grid-template-columns:1fr;}}
+.card{background:var(--panel); border:1px solid var(--line); display:flex; flex-direction:column;}
+.card-head{display:flex; align-items:center; justify-content:space-between; padding:12px 16px; border-bottom:1px solid var(--line); gap:10px; flex-shrink:0;}
+.card-title{font-size:11.5px; font-weight:500; letter-spacing:.08em; text-transform:uppercase; color:var(--text2); display:flex; align-items:center; gap:8px;}
+.card-title::before{content:'▸'; color:var(--acc); font-size:13px;}
+.card-body{padding:16px; flex:1; overflow:auto;}
+label.lbl{font-size:10px; letter-spacing:.1em; text-transform:uppercase; color:var(--text3); display:block; margin-bottom:5px;}
+select,input[type=text]{border-radius:8px;font-size:13px; width:100%; padding:8px 10px; border:1px solid var(--line2); background:var(--bg); color:var(--text); outline:none; transition:border-color .15s;}
+select:focus,input:focus{border-color:var(--acc);}
+.form-row{display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr)); gap:10px; align-items:end;}
+.btn{border-radius:8px;font-size:12.5px; letter-spacing:.06em; padding:9px 14px; border:1px solid var(--line2); background:transparent; color:var(--text2); cursor:pointer; transition:background .15s,color .15s,border-color .15s;}
+.btn:hover{background:var(--panel2); border-color:var(--line3); color:var(--text);}
+.btn-sm{padding:5px 10px; font-size:11px;}
+.btn-acc{color:var(--acc); border-color:var(--acc);}
+.btn-acc:hover{background:var(--acc); color:var(--bg); box-shadow:0 0 16px var(--acc-glow);}
+.btn-warn{color:var(--warn); border-color:var(--warn);}
+.btn-warn:hover{background:var(--warn); color:var(--bg);}
+.btn-solid{background:var(--acc); color:var(--bg); border-color:var(--acc); font-weight:700;}
+.btn-solid:hover{box-shadow:0 0 20px var(--acc-glow);}
+.result{margin-top:12px; font-size:12.5px; min-height:20px; padding:0 2px;}
+.ok{color:var(--acc);} .bad{color:var(--danger);} .muted{color:var(--text3);}
+.pending{border-radius:10px;border:1px solid var(--acc2); background:var(--acc-bg); padding:12px 14px; margin-top:12px; box-shadow:0 0 20px var(--acc-glow) inset;}
+.pending-row{display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;}
+.pending-info{font-size:13px; color:var(--text);}
+.pending-info b{color:var(--acc);}
+.pending-btns{display:flex; gap:8px;}
+.board-row{border-radius:8px;display:grid; grid-template-columns:10px 110px 120px 1fr 90px 130px 60px; align-items:center; gap:10px; padding:9px 12px; border:1px solid var(--line); margin-bottom:5px; background:var(--panel2); font-size:12.5px;}
+.tcat{font-weight:700; font-size:12px;}
+.pid-badge{font-size:10.5px; letter-spacing:.06em; color:var(--acc); border:1px solid var(--line3); padding:1px 6px; white-space:nowrap;}
+.stage-badge{font-size:10px; padding:3px 7px; background:var(--bg); border:1px solid var(--line2); color:var(--text2); letter-spacing:.05em; text-transform:uppercase; text-align:center; white-space:nowrap;}
+.fac-name{font-size:11.5px; color:var(--text2); text-align:right; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+.msg-row{border-radius:8px;border:1px solid var(--line); border-left:3px solid var(--acc); padding:10px 12px; margin-bottom:6px; background:var(--panel2);}
+.msg-row.agg{border-left-color:var(--warn);}
+.msg-to{font-weight:700; color:var(--acc); font-size:12.5px;}
+.msg-row.agg .msg-to{color:var(--warn);}
+.msg-body{font-size:12.5px; color:var(--text); margin-top:3px;}
+.msg-meta{font-size:10.5px; color:var(--text3); margin-top:3px; letter-spacing:.04em;}
+.fac-card{border:1px solid var(--line);border-radius:10px; background:var(--panel2); margin-bottom:12px;}
+.fac-head{display:flex; align-items:center; justify-content:space-between; padding:10px 14px; border-bottom:1px solid var(--line);}
+.fac-name-big{font-weight:700; font-size:13.5px;}
+.fac-type{font-size:11px; color:var(--text3);}
+.fac-role{font-size:11px; color:var(--text2);}
+.fac-body{display:grid; grid-template-columns:repeat(3,1fr); gap:0;}
+.res{padding:12px 14px; border-right:1px solid var(--line);}
+.res:last-child{border-right:none;}
+.res-label{font-size:10px; letter-spacing:.1em; text-transform:uppercase; color:var(--text3); margin-bottom:6px;}
+.res-nums{font-size:18px; font-weight:700; margin-bottom:7px;}
+.res-bar{height:5px; background:var(--bg); border:1px solid var(--line); overflow:hidden;}
+.res-bar div{height:100%;}
+.led-table{width:100%; border-collapse:collapse;}
+.led-table th{text-align:left; font-size:10px; letter-spacing:.1em; text-transform:uppercase; color:var(--text3); padding:8px 12px; border-bottom:1px solid var(--line2);}
+.led-table td{padding:11px 12px; border-bottom:1px solid var(--line); vertical-align:middle;}
+.led-table tr:last-child td{border-bottom:none;}
+.led-table tr:hover td{background:var(--panel2);}
+.item-name{font-weight:700; font-size:13px;}
+.burn{color:var(--text2);}
+.pill{border-radius:4px;font-size:10px; padding:3px 9px; border:1px solid currentColor; letter-spacing:.06em; text-transform:uppercase; font-weight:700; white-space:nowrap;}
+.pill.ok{color:var(--acc);} .pill.low{color:var(--warn);} .pill.crit{color:var(--danger);}
+.id-card{border-radius:10px;overflow:hidden;border:1px solid var(--line2); background:var(--panel2); display:grid; grid-template-columns:130px 1fr; gap:0;}
+.qr-zone{padding:14px; display:flex; align-items:center; justify-content:center; border-right:1px solid var(--line2);}
+.qrbox{width:112px; height:112px; background:#fff; padding:7px; display:flex; align-items:center; justify-content:center;}
+.qrbox canvas,.qrbox img,.qrbox svg{width:100%; height:100%; object-fit:contain;}
+.id-meta{padding:16px 18px;}
+.id-big{font-size:20px; font-weight:700; color:var(--acc); letter-spacing:.06em; margin-bottom:14px;}
+.id-grid{display:grid; grid-template-columns:70px 1fr; gap:5px 14px;}
+.id-key{font-size:10px; letter-spacing:.1em; text-transform:uppercase; color:var(--text3); align-self:center;}
+.id-val{font-size:13px; color:var(--text); align-self:center;}
+.pid-row{display:grid; grid-template-columns:10px 120px 1fr 130px; align-items:center; gap:10px; padding:8px 10px; border:1px solid var(--line); margin-bottom:4px; background:var(--panel2); font-size:12.5px;}
+.voicebox{margin-top:10px; padding:8px 10px; border:1px dashed var(--line2); font-size:12.5px; color:var(--text2); display:none;}
+.voicebox.show{display:block;}
+.scrollable{max-height:400px; overflow:auto;}
+.scrollable-sm{max-height:320px; overflow:auto;}
+.empty-state{font-size:12.5px; color:var(--text3); padding:10px 0;}
+::-webkit-scrollbar{width:7px; height:7px;} ::-webkit-scrollbar-track{background:var(--bg);} ::-webkit-scrollbar-thumb{background:var(--line2);}
+.foot{padding:14px 24px; font-size:10.5px; color:var(--text3); letter-spacing:.05em; border-top:1px solid var(--line); background:var(--bg2);}
+#mev-map{height:420px; border:1px solid var(--line); z-index:0; filter:saturate(.7) brightness(.8);}
+.mev-legend{display:flex; gap:16px; flex-wrap:wrap; font-size:11px; color:var(--text3); margin-top:10px; letter-spacing:.04em;}
+.mev-legend span{display:flex; align-items:center; gap:6px;}
+.mev-unit{font-size:12px; padding:6px 10px; border:1px solid var(--line); background:var(--panel2); margin-bottom:5px; display:flex; align-items:center; gap:10px; justify-content:space-between;}
+.mev-unit .eta{font-family:'JetBrains Mono',monospace; color:var(--acc); font-weight:700; font-size:14px;}
+.bf-row{display:grid; grid-template-columns:110px 1fr 80px 80px 80px 80px; align-items:center; gap:8px; padding:8px 10px; border:1px solid var(--line); margin-bottom:4px; background:var(--panel2); font-size:12.5px;}
+.bf-bar-wrap{height:8px; background:var(--bg); border:1px solid var(--line); overflow:hidden; border-radius:1px;}
+.bf-bar{height:100%; transition:width .3s;}
+.bf-kpi{display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:12px; margin-bottom:16px;}
+.bf-kpi-card{background:var(--panel2); border:1px solid var(--line); padding:12px 14px;}
+.bf-kpi-card .kl{font-size:10px; letter-spacing:.1em; text-transform:uppercase; color:var(--text3);}
+.bf-kpi-card .kv{font-size:22px; font-weight:700; color:var(--acc); margin-top:4px;}
+.discharge-flag{font-size:10px; padding:2px 6px; border:1px solid var(--warn); color:var(--warn); letter-spacing:.04em; text-transform:uppercase;}
+.bed-tile{border-radius:8px;padding:12px;border:2px solid var(--line);background:var(--panel2);cursor:pointer;transition:all 0.2s;position:relative;min-height:90px;display:flex;flex-direction:column;justify-content:space-between;}
+.bed-tile:hover{transform:translateY(-2px);box-shadow:0 4px 12px rgba(0,0,0,0.08);}
+.bed-tile .bed-id{font-weight:700;font-size:13px;color:var(--text);}
+.bed-tile .bed-status{font-size:10px;letter-spacing:.08em;text-transform:uppercase;padding:3px 8px;border-radius:4px;display:inline-block;margin-top:4px;font-weight:600;}
+.bed-tile .bed-patient{font-size:11px;color:var(--text2);margin-top:4px;}
+.bed-tile .bed-iot{font-size:9px;color:var(--text3);margin-top:4px;border-top:1px solid var(--line);padding-top:4px;}
+.bed-tile .bed-mismatch{position:absolute;top:-6px;right:-6px;width:18px;height:18px;border-radius:50%;background:var(--danger);color:white;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;box-shadow:0 0 8px rgba(220,38,38,0.4);animation:pulse 1.5s ease-in-out infinite;}
+.bed-tile .bed-last-change{font-size:9px;color:var(--text3);margin-top:4px;}
+.bed-tile.bed-occupied{border-color:#dc2626;background:#fef2f2;}
+.bed-tile.bed-unclean{border-color:#d97706;background:#fffbeb;}
+.bed-tile.bed-cleaning{border-color:#fbbf24;background:#fefce8;}
+.bed-tile.bed-available{border-color:#2563eb;background:#eff6ff;}
+.bed-tile.bed-assigned{border-color:#8b5cf6;background:#f5f3ff;}
+.bed-tile.bed-out{border-color:#94a3b8;background:#f8fafc;}
+.demand-bar{height:30px; background:var(--bg); border:1px solid var(--line); border-radius:4px; overflow:hidden; position:relative; margin:4px 0;}
+.demand-bar .fill{height:100%; transition:width .5s ease; position:absolute; top:0; left:0;}
+.demand-bar .label{position:absolute; width:100%; text-align:center; font-size:11px; font-weight:600; color:var(--text); line-height:30px; z-index:2;}
+.demand-summary{display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; margin:8px 0;}
+.demand-summary .item{text-align:center; padding:8px; background:var(--panel2); border-radius:6px; border:1px solid var(--line);}
+.demand-summary .item .num{font-size:28px; font-weight:700;}
+.demand-summary .item .lbl{font-size:10px; color:var(--text3); text-transform:uppercase; letter-spacing:.05em;}
+@media(max-width:768px){
+  .sbar{padding:5px 12px; gap:10px; font-size:10px;}
+  .sbar-pills{display:none;}
+  .hdr{padding:10px 14px;}
+  .brand-mark{width:28px; height:28px; font-size:10px;}
+  .brand-txt .bname{font-size:14px;}
+  .hdr-right{gap:8px;}
+  .nav-link{display:none;}
+  .toggle button{padding:6px 10px; font-size:10px;}
+  .metrics{grid-template-columns:repeat(3,1fr);}
+  .metric{padding:10px 12px;}
+  .m-value{font-size:18px;}
+  .content{padding:14px;}
+  .g2,.g21,.g3{grid-template-columns:1fr;}
+  .form-row{grid-template-columns:1fr 1fr;}
+  .board-row{grid-template-columns:10px 90px 100px 1fr 70px 60px; font-size:11.5px;}
+  .bf-row{grid-template-columns:90px 1fr 60px 60px 60px 60px; font-size:11px;}
+  #mev-map{height:300px;}
+}
+</style>
+</head>
+<body>
+
+<!-- HTML structure identical to previous, unchanged -->
+<div class="sbar">
+  <span class="sbar-id" id="sb-id">MEDCOM-X // HOSPITAL NET</span>
+  <div class="sbar-pills">
+    <span class="sbar-pill">SYS <b style="color:var(--acc)">ONLINE</b></span>
+    <span class="sbar-pill">NODES <b>01</b></span>
+    <span class="sbar-pill">UPLINK <b id="sb-up">TI-MSGR</b></span>
+  </div>
+  <div class="sbar-ticker"><span id="sb-flow">SYSTEM ONLINE — DATA LINK NOMINAL</span></div>
+  <span class="sbar-clock" id="sb-clock">--:--:-- Z</span>
+</div>
+
+<div class="hdr">
+  <div class="brand">
+    <div class="brand-mark">MX</div>
+    <div class="brand-txt">
+      <div class="bname">MEDCOM-X // CONSOLE</div>
+      <div class="bsub" id="mode-sub">HOSPITAL — SURGE NETWORK</div>
+    </div>
+  </div>
+  <div class="hdr-right">
+    <button class="btn btn-sm" id="wall-btn" style="font-size:10px;padding:5px 12px;color:var(--warn);border-color:var(--warn);">WALL MODE</button>
+    <button class="btn btn-sm btn-acc" id="pdf-btn" style="font-size:10px;padding:5px 12px;">PDF EXPORT</button>
+    <div class="toggle">
+      <button id="btn-civ" class="on">HOSPITAL</button>
+      <button id="btn-mil">FIELD</button>
+    </div>
+  </div>
+</div>
+
+<div class="metrics" id="metrics"></div>
+
+<div style="display:flex;min-height:calc(100vh - 180px);">
+
+<div class="sidebar">
+  <div style="padding:12px 14px;font-size:10px;letter-spacing:.14em;color:var(--text3);text-transform:uppercase;border-bottom:1px solid var(--line);">MODULES</div>
+  <button class="tab-btn on" data-tab="ops">Operations</button>
+  <button class="tab-btn" data-tab="hosp">Hospitals</button>
+  <button class="tab-btn" data-tab="log">Logistics</button>
+  <button class="tab-btn" data-tab="pid">Patient ID</button>
+  <button class="tab-btn" data-tab="mev">MEDEVAC</button>
+  <button class="tab-btn" data-tab="bed">Bed Flow</button>
+  <button class="tab-btn" data-tab="bed-admin" style="border-left:3px solid var(--acc);color:var(--acc);">Bed Admin</button>
+  <button class="tab-btn" data-tab="staff">Staff</button>
+  <button class="tab-btn" data-tab="whatif">What-If</button>
+  <button class="tab-btn" data-tab="audit">Audit Log</button>
+  <button class="tab-btn" data-tab="glb">Procurement</button>
+  <button class="tab-btn" data-tab="crl">CRL Assets</button>
+  <div style="flex:1"></div>
+  <div style="padding:10px 14px;border-top:1px solid var(--line);">
+    <div style="display:flex;gap:6px;flex-direction:column;">
+      <span style="font-size:9px;color:var(--text3);letter-spacing:.1em;text-transform:uppercase;">Posture</span>
+      <div class="toggle" style="width:100%;">
+        <button id="btn-peace" class="on" style="flex:1;font-size:10px;padding:6px 8px;">PEACE</button>
+        <button id="btn-crisis" style="flex:1;font-size:10px;padding:6px 8px;">CRISIS</button>
+      </div>
+      <span style="font-size:9px;color:var(--text3);letter-spacing:.1em;text-transform:uppercase;margin-top:6px;">Language</span>
+      <div class="toggle" style="width:100%;">
+        <button id="btn-en" class="on" style="flex:1;font-size:10px;padding:6px 8px;">EN</button>
+        <button id="btn-de" style="flex:1;font-size:10px;padding:6px 8px;">DE</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div style="flex:1;overflow:auto;">
+<div class="content" id="content"></div>
+</div>
+</div>
+
+<div class="foot">DECISION-SUPPORT ONLY — A HUMAN COORDINATOR CONFIRMS EVERY ROUTING · ALL DATA SIMULATED · NO DATA LEAVES THIS PAGE</div>
+
+<div id="wall-overlay" style="display:none;position:fixed;inset:0;z-index:9999;background:#f1f3f9;overflow:auto;padding:20px 24px;">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+    <div style="font-size:20px;font-weight:700;color:var(--acc);display:flex;align-items:center;gap:12px;">
+      <span style="width:10px;height:10px;background:var(--acc);box-shadow:0 0 8px var(--acc);display:block;border-radius:50%;animation:blink 1.4s steps(2) infinite"></span>
+      MEDCOM-X // UNIFIED COMMAND DASHBOARD
+    </div>
+    <div style="display:flex;align-items:center;gap:14px;">
+      <span id="wall-updated" style="font-size:11px;color:var(--text3);"></span>
+      <button class="btn btn-sm" id="wall-close" style="color:var(--danger);border-color:var(--danger);">EXIT</button>
+    </div>
+  </div>
+  <div id="wall-content"></div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+(function(){
+  "use strict";
+
+  // ─── CONSTANTS (static values from PDF) ───
+  var TOTAL_CAPACITY = 18;      // total beds
+  var SYSTEM_AVAILABLE = 10;    // beds immediately visible (3 Cardio + 2 Geriatrics + 4 ICU + 1 IMC)
+  var TOTAL_DEMAND = 18;        // patients waiting
+
+  // ─── CORE DATA ───
+  var STAGES = ['Logged','En route','Arrived','In treatment','Cleared'];
+  
+  // Ward data (bed counts and demand per ward)
+  var wardData = [
+    { name: 'Cardiology', beds: 3, demand: 3, icu: false },
+    { name: 'Geriatrics', beds: 2, demand: 2, icu: false },
+    { name: 'ICU', beds: 4, demand: 4, icu: true },
+    { name: 'IMC', beds: 4, demand: 4, icu: false },
+    { name: 'Internal Medicine', beds: 5, demand: 5, icu: false }
+  ];
+  // Total beds = 3+2+4+4+5 = 18, demand = 18
+
+  var schemes = {
+    civ: {
+      sub: 'HOSPITAL — SURGE NETWORK', sbid: 'MEDCOM-X // HOSPITAL NET', sbup: 'TI-MSGR', channel: 'TI-Messenger', cleared: 'Discharged', pfx: 'PT',
+      flow: 'KLINIKUM MITTE - 18 BEDS - 10 VISIBLE - 8 HIDDEN - IoT REVEALS 9 MORE',
+      tri: [['T1','Immediate','#dc2626'],['T2','Urgent','#d97706'],['T3','Delayed','#2563eb'],['T4','Expectant','#94a3b8']],
+      facs: [
+        {
+          n: 'Klinikum Mitte',
+          t: 'Level I trauma',
+          role: 'Trauma lead',
+          beds: TOTAL_CAPACITY,
+          free: SYSTEM_AVAILABLE, // initially, but will be overridden by getAvailableCount static
+          icu: 4,
+          icuFree: 2,
+          vent: 8,
+          ventFree: 3,
+          surg: true,
+          lat: 52.524,
+          lng: 13.388,
+          wards: wardData
+        }
+      ],
+      inv: [
+        {item:'O-neg blood',unit:'units',stock:48,rate:6},
+        {item:'Packed RBC',unit:'units',stock:120,rate:9},
+        {item:'Surgical kits',unit:'kits',stock:34,rate:5},
+        {item:'Ventilator circuits',unit:'sets',stock:22,rate:2},
+        {item:'Analgesics',unit:'vials',stock:210,rate:14},
+        {item:'IV fluids',unit:'bags',stock:160,rate:18}
+      ]
+    },
+    mil: {
+      sub: 'FIELD — MEDICAL CHAIN', sbid: 'MEDCOM-X // FIELD MED CHAIN', sbup: 'SAT-LINK', channel: 'Secure messenger', cleared: 'Evacuated', pfx: 'CX',
+      flow: 'ROLE 1 ALPHA - 2 FREE - ROLE 2 FWD - 4 FREE - ROLE 3 FIELD HOSP - 9 FREE',
+      tri: [['T1','Immediate','#dc2626'],['T2','Delayed','#d97706'],['T3','Minimal','#ffaa00'],['T4','Expectant','#a16207']],
+      facs: [
+        {n:'Role 1 Aid post Alpha',t:'Forward aid',role:'Medic NCO',beds:6,free:2,icu:0,icuFree:0,vent:1,ventFree:1,surg:false,lat:52.44,lng:13.22},
+        {n:'Role 2 Fwd surgical',t:'Surgical fwd',role:'Surgical team lead',beds:10,free:4,icu:2,icuFree:1,vent:3,ventFree:2,surg:true,lat:52.40,lng:13.28},
+        {n:'Role 3 Field hospital',t:'Field hospital',role:'Triage officer',beds:24,free:9,icu:6,icuFree:3,vent:8,ventFree:4,surg:true,lat:52.36,lng:13.36},
+        {n:'Role 2 Fwd surgical Bravo',t:'Surgical fwd',role:'Surgical team lead',beds:10,free:3,icu:2,icuFree:1,vent:3,ventFree:1,surg:true,lat:52.43,lng:13.40}
+      ],
+      inv: [
+        {item:'O-neg blood',unit:'units',stock:30,rate:7},
+        {item:'Whole blood FWB',unit:'units',stock:18,rate:5},
+        {item:'Surgical kits',unit:'kits',stock:20,rate:6},
+        {item:'Tourniquets CAT',unit:'units',stock:60,rate:10},
+        {item:'TXA',unit:'vials',stock:40,rate:4},
+        {item:'IV fluids',unit:'bags',stock:90,rate:15}
+      ]
+    }
+  };
+
+  // ─── BED MANAGEMENT DATA ───
+  var BED_STATES = {
+    OCCUPIED: { label: 'OCCUPIED', color: '#dc2626' },
+    UNCLEAN: { label: 'UNCLEAN', color: '#d97706' },
+    CLEANING: { label: 'CLEANING', color: '#fbbf24' },
+    AVAILABLE: { label: 'AVAILABLE', color: '#2563eb' },
+    ASSIGNED: { label: 'ASSIGNED', color: '#8b5cf6' },
+    OUT_OF_SERVICE: { label: 'OUT OF SERVICE', color: '#94a3b8' }
+  };
+
+  var beds = [];
+  var bedTimeline = [];
+  var bedIdCounter = 1;
+
+  function generateBeds() {
+    beds = [];
+    bedTimeline = [];
+    bedIdCounter = 1;
+    var facility = 'Klinikum Mitte';
+    wardData.forEach(function(ward) {
+      for (var i = 0; i < ward.beds; i++) {
+        // Make about 50% occupied, but ensure total available = SYSTEM_AVAILABLE initially?
+        // We'll set some as available and some occupied to match system view.
+        // For simplicity, random with bias to get roughly 10 available.
+        var isOccupied = Math.random() < 0.55; // roughly 10 occupied, 8 available? Actually 18 total, system shows 10 available => 8 occupied.
+        // Better: hardcode initial states to match the PDF: 10 available, 8 occupied.
+        // But we want mismatches too, so we can set some beds as occupied but IoT says available.
+        // We'll generate and then adjust.
+        var state = 'AVAILABLE';
+        var patientId = null;
+        // We'll assign based on ward to match the visible count: 3 Cardio, 2 Geriatrics, 4 ICU, 1 IMC available = 10.
+        // The remaining 8 (4 IMC + 5 Internal Med) are occupied (or unclean) initially.
+        if (ward.name === 'Internal Medicine' || (ward.name === 'IMC' && i >= 1)) {
+          // These are hidden beds: occupied
+          state = 'OCCUPIED';
+          patientId = 'PT-' + String(Math.floor(1000 + Math.random() * 9000));
+        } else {
+          // Available beds
+          state = 'AVAILABLE';
+          patientId = null;
+        }
+        // But add some randomness: for example, in IMC, make 1 available (i=0), 3 occupied.
+        // For Internal Medicine, all 5 occupied initially.
+        // For Cardio, all 3 available, Geriatrics 2 available, ICU 4 available.
+        beds.push({
+          id: 'BED-' + String(bedIdCounter++).padStart(4, '0'),
+          facility: facility,
+          ward: ward.name,
+          number: String(i + 1).padStart(2, '0'),
+          state: state,
+          displayState: state, // start with no mismatch
+          patientId: patientId,
+          lastChange: new Date(),
+          history: [{ state: state, timestamp: new Date(), source: 'system' }]
+        });
+      }
+    });
+    // Introduce some mismatches (IoT beacons reveal hidden beds)
+    // For example, some occupied beds get displayState = AVAILABLE
+    beds.forEach(function(bed, i) {
+      if (i % 4 === 0 && bed.state === 'OCCUPIED') {
+        bed.displayState = 'AVAILABLE';
+        bed.history.push({ state: 'AVAILABLE', timestamp: new Date(), source: 'iot' });
+      } else if (i % 6 === 0 && bed.state === 'AVAILABLE') {
+        bed.displayState = 'OCCUPIED';
+        bed.patientId = 'PT-' + String(Math.floor(1000 + Math.random() * 9000));
+        bed.history.push({ state: 'OCCUPIED', timestamp: new Date(), source: 'iot' });
+      }
+    });
+    bedTimeline.push({ timestamp: new Date(), message: 'System initialized with ' + beds.length + ' beds. Available (system): ' + SYSTEM_AVAILABLE });
+  }
+  generateBeds();
+
+  // ─── STATIC GETTERS ───
+  function getTotalDemand() { return TOTAL_DEMAND; }
+  function getAvailableCount() { return SYSTEM_AVAILABLE; } // static
+  function getOccupiedCount() {
+    return beds.filter(function(b){ return b.state === 'OCCUPIED' || b.state === 'ASSIGNED'; }).length;
+  }
+
+  function getStateConfig(state) { return BED_STATES[state] || BED_STATES.AVAILABLE; }
+  function hasMismatch(bed) { return bed.state !== bed.displayState; }
+  function countMismatches() { var c=0; beds.forEach(function(b){ if(hasMismatch(b)) c++; }); return c; }
+
+  // ─── CORE FUNCTIONS (unchanged) ───
+  var $ = function(id){ return document.getElementById(id); };
+  var S = function(){ return schemes[mode]; };
+  var F = function(){ return S()._facs; };
+  var IV = function(){ return S()._inv; };
+
+  var mode='civ', curTab='ops';
+  var patients=[], seq=1, routeTimes=[], messages=[], suppressed=0, pending=null, surgeBatch=0;
+  var auditLog=[], resHistory=[];
+  var rooms = [];
+  var staff = [];
+
+  function initStaffAndRooms() {
+    staff = [
+      {name:'Dr. Weber',role:'Surgeon',pts:0,max:8,spec:'Trauma'},
+      {name:'Dr. Azimi',role:'Surgeon',pts:0,max:8,spec:'Vascular'},
+      {name:'N. Krause',role:'Nurse',pts:0,max:6,spec:'ICU'},
+      {name:'N. Fischer',role:'Nurse',pts:0,max:6,spec:'ED'},
+      {name:'N. Becker',role:'Nurse',pts:0,max:6,spec:'General'},
+      {name:'M. Hoffmann',role:'Medic',pts:0,max:5,spec:'Triage'},
+      {name:'Dr. Yilmaz',role:'Surgeon',pts:0,max:8,spec:'Ortho'},
+      {name:'N. Schneider',role:'Nurse',pts:0,max:6,spec:'Peds'}
+    ];
+    rooms = [
+      {id:'OR-01',fac:'Klinikum Mitte',type:'Operating Room',status:'available',patient:null,eta:null},
+      {id:'OR-02',fac:'Klinikum Mitte',type:'Operating Room',status:'occupied',patient:'PT-0001',eta:'45m'},
+      {id:'ER-Bay1',fac:'Klinikum Mitte',type:'ER Bay',status:'occupied',patient:'PT-0003',eta:'20m'},
+      {id:'ER-Bay2',fac:'Klinikum Mitte',type:'ER Bay',status:'cleaning',patient:null,eta:'10m'},
+      {id:'ICU-Bay1',fac:'Klinikum Mitte',type:'ICU Bay',status:'occupied',patient:'PT-0005',eta:null},
+      {id:'Exam-1',fac:'Klinikum Mitte',type:'Exam Room',status:'available',patient:null,eta:null}
+    ];
+  }
+  initStaffAndRooms();
+
+  function logA(action,detail){ auditLog.unshift({t:nowt(),action:action,detail:detail,user:'COORD-01',mode:mode}); if(auditLog.length>100)auditLog.pop(); }
+  function assignStaff(cat){ var best=null,bl=999; staff.forEach(function(s){ if(s.pts<s.max&&s.pts<bl){bl=s.pts;best=s;} }); if(best){best.pts++;return best.name;} return null; }
+  function releaseStaff(){ staff.forEach(function(s){ if(s.pts>0&&Math.random()<0.3)s.pts--; }); }
+  function tc(c){ var f=S().tri.find(function(t){return t[0]===c;}); return f?f[2]:'#94a3b8'; }
+  function tl(c){ var f=S().tri.find(function(t){return t[0]===c;}); return f?f[1]:''; }
+  function nowt(){ return new Date().toTimeString().slice(0,8); }
+  function pid(){ return S().pfx+'-'+String(seq).padStart(4,'0')+'-'+Math.random().toString(16).slice(2,6).toUpperCase(); }
+  function hts(it){ return it.rate<=0?Infinity:it.stock/it.rate; }
+  function ist(it){ var h=hts(it); return h<6?'crit':h<18?'low':'ok'; }
+
+  function scoreF(f,sev,dist,icu){
+    if(f.free<=0)return -1e9;
+    var s=f.free*2+(f.surg&&sev>=2?6:0)-dist;
+    if(icu){s+=f.icuFree>0?f.icuFree*1.5:-8;}
+    return s;
+  }
+  function bestF(cat,dist,icu,ex){
+    var sev=cat==='T1'?3:cat==='T2'?2:1, best=null, bs=-1e9;
+    F().forEach(function(f,i){if(i===ex)return; var s=scoreF(f,sev,dist,icu); if(s>bs){bs=s;best=i;} });
+    return best;
+  }
+  function consumeFor(cat){ var burn=cat==='T1'?3:cat==='T2'?2:1; IV().forEach(function(it){it.stock=Math.max(0,it.stock-Math.round(burn*(it.rate/8)*(0.5+Math.random()))); }); }
+
+  function pushMsg(idx,cat,surge){
+    var f=F()[idx];
+    if(surge){
+      var ex=messages.find(function(m){return m.agg&&m.role===f.role&&m.bat===surgeBatch;});
+      if(ex){ex.n++;ex.cats[cat]=(ex.cats[cat]||0)+1;suppressed++;return;}
+      var o={};o[cat]=1;
+      messages.unshift({agg:true,role:f.role,fac:f.n,bat:surgeBatch,n:1,cats:o,t:nowt(),ch:S().channel});
+    }else{
+      messages.unshift({agg:false,role:f.role,fac:f.n,cat:cat,t:nowt(),ch:S().channel});
+    }
+    if(messages.length>20)messages.pop();
+  }
+
+  function propose(cat,inj,dist,icu){
+    var idx=bestF(cat,dist,icu,-1);
+    if(idx===null){ setResult('NO CAPACITY IN NETWORK — COORDINATOR ESCALATION REQUIRED'); pending=null; renderPending(); return; }
+    pending={cat:cat,inj:inj,dist:dist,icu:icu,idx:idx}; renderPending();
+  }
+  function renderPending(){
+    var w=$('pw'); if(!w) return;
+    if(!pending){ w.innerHTML=''; return; }
+    var f=F()[pending.idx];
+    w.innerHTML='<div class="pending"><div class="pending-row">'+
+      '<div class="pending-info">PROPOSED: <b>'+pending.cat+' '+tl(pending.cat)+'</b> - '+pending.inj+(pending.icu?' - ICU':'')+' -> <b>'+f.n+'</b> <span style="color:var(--text2)">('+f.free+' beds, '+f.icuFree+' ICU free)</span></div>'+
+      '<div class="pending-btns">'+
+      '<button class="btn btn-sm btn-acc" id="pc">CONFIRM</button>'+
+      '<button class="btn btn-sm" id="pa">RE-ROUTE</button>'+
+      '<button class="btn btn-sm" id="px">CANCEL</button>'+
+      '</div></div></div>';
+    $('pc').onclick=function(){ commit(pending.cat,pending.inj,pending.idx,pending.icu,false); pending=null; renderPending(); };
+    $('px').onclick=function(){ pending=null; renderPending(); setResult('Routing cancelled by coordinator.'); };
+    $('pa').onclick=function(){ var a=bestF(pending.cat,pending.dist,pending.icu,pending.idx); if(a===null){ setResult('No alternative with capacity.'); return; } pending.idx=a; renderPending(); };
+  }
+  function setResult(html){ var r=$('res'); if(r) r.innerHTML=html; }
+  function commit(cat,inj,facIdx,icu,surge){
+    var list=F(), rt=Math.round(2+Math.random()*4);
+    list[facIdx].free--; if(icu&&list[facIdx].icuFree>0) list[facIdx].icuFree--;
+    routeTimes.push(rt);
+    var p={id:pid(),cat:cat,inj:inj,facIdx:facIdx,fac:list[facIdx].n,stage:0,icu:icu,t:nowt()};
+    patients.unshift(p); seq++;
+    pushMsg(facIdx,cat,surge); consumeFor(cat);
+    var staffName=assignStaff(cat);
+    if(!surge) setResult('CONFIRMED -> <b>'+list[facIdx].n+'</b> - ID <b>'+p.id+'</b> - alert to '+list[facIdx].role+' via '+S().channel+' ('+rt+'s)'+(staffName?' - Staff: '+staffName:''));
+    logA('ROUTE',p.id+' -> '+list[facIdx].n+' ['+cat+']'+(staffName?' assigned:'+staffName:''));
+    updateBedFlowFromAdmin();
+    render();
+  }
+  function surge(n){
+    surgeBatch++;
+    var cats=['T1','T2','T2','T3','T1','T3','T2','T4'], injs=['Blast/trauma','Hemorrhage','Respiratory','Burns','Blast/trauma','Other','Hemorrhage','Respiratory'];
+    var f=0;
+    for(var i=0;i<n;i++){
+      var cat=cats[i%8], inj=injs[i%8], dist=1+(i%3), icu=(cat==='T1');
+      var idx=bestF(cat,dist,icu,-1);
+      if(idx===null){ patients.unshift({id:pid(),cat:cat,inj:inj,facIdx:null,fac:null,stage:0,icu:icu,t:nowt()}); seq++; f++; }
+      else{ commit(cat,inj,idx,icu,true); }
+    }
+    setResult('SURGE: '+(n-f)+' routed, '+f+' escalated. '+(f?'NETWORK NEAR SATURATION.':'All absorbed.'));
+    render();
+  }
+  function advance(id){
+    var p=patients.find(function(x){return x.id===id;}); if(!p) return;
+    if(p.stage<STAGES.length-1){ p.stage++; if(p.stage===STAGES.length-1&&p.facIdx!==null){ F()[p.facIdx].free++; if(p.icu)F()[p.facIdx].icuFree++; releaseStaff(); } }
+    logA('ADVANCE',p.id+' -> '+STAGES[p.stage]);
+    render();
+  }
+  function redistribute(name){
+    var it=IV().find(function(x){return x.item===name;}); if(!it) return;
+    it.stock+=Math.round(it.rate*12);
+    messages.unshift({agg:false,role:'Logistics cell',fac:'Network reserve',cat:'RESUPPLY',t:nowt(),ch:S().channel});
+    logA('RESUPPLY',name+' +'+Math.round(it.rate*12)+' from network reserve');
+    render();
+  }
+
+  function resScore(){
+    var list=F(), tb=0, tf=0; list.forEach(function(f){ tb+=f.beds; tf+=f.free; });
+    var bedPct=tb?tf/tb*100:0;
+    var staffPct=100-Math.round(staff.filter(function(s){return s.pts>=s.max;}).length/staff.length*100);
+    var supplyPct=IV().filter(function(x){return ist(x)==='ok';}).length/IV().length*100;
+    var alertPct=messages.length>0?Math.min(100,suppressed/(messages.length+suppressed)*100+50):100;
+    return Math.round(bedPct*0.3+staffPct*0.25+supplyPct*0.25+alertPct*0.2);
+  }
+  function capC(p){ return p>40?'var(--acc)':p>15?'var(--warn)':'var(--danger)'; }
+  function mc(l,v,c){ return '<div class="metric"><div class="m-label">'+l+'</div><div class="m-value '+c+'">'+v+'</div></div>'; }
+
+  function renderMetrics(){
+    var list=F(), tb=0, tf=0, it=0, iff=0;
+    list.forEach(function(f){ tb+=f.beds; tf+=f.free; it+=f.icu; iff+=f.icuFree; });
+    var active=patients.filter(function(p){return p.stage<STAGES.length-1;});
+    var crit=IV().filter(function(x){return ist(x)==='crit';}).length;
+    var cp=tb?Math.round(tf/tb*100):0;
+    var avg=routeTimes.length?Math.round(routeTimes.reduce(function(a,b){return a+b;},0)/routeTimes.length):0;
+    var rs=resScore();
+    var rsClass=rs>=80?'':rs>=50?'warn':'danger';
+    var totalDemand = getTotalDemand(); // static 18
+    var occupied = getOccupiedCount();
+    var available = getAvailableCount(); // static 10
+    $('metrics').innerHTML =
+      mc('CASUALTIES',active.length,'')+
+      mc('OCCUPIED',occupied,'')+
+      mc('DEMAND',totalDemand,totalDemand>0?'warn':'')+
+      mc('AVAILABLE BEDS',available,available<totalDemand?'danger':'')+
+      mc('ALERTS SUPP.',suppressed,'')+
+      mc('SUPPLY CRIT',crit,crit>0?'danger':'')+
+      mc('RESILIENCE',rs+'',rsClass);
+  }
+
+  // ─── BED ADMIN FUNCTIONS (with static available) ───
+  function renderBedGrid() {
+    var grid = document.getElementById('bed-grid');
+    if (!grid) return;
+    grid.innerHTML = beds.map(function(bed) {
+      var stateConfig = getStateConfig(bed.state);
+      var displayConfig = getStateConfig(bed.displayState);
+      var isMismatch = hasMismatch(bed);
+      var timeSince = Math.floor((new Date() - new Date(bed.lastChange)) / 1000 / 60);
+      var timeStr = timeSince < 1 ? 'just now' : timeSince + 'm ago';
+      var bedClass = 'bed-tile';
+      if (bed.state === 'OCCUPIED') bedClass += ' bed-occupied';
+      else if (bed.state === 'UNCLEAN') bedClass += ' bed-unclean';
+      else if (bed.state === 'CLEANING') bedClass += ' bed-cleaning';
+      else if (bed.state === 'AVAILABLE') bedClass += ' bed-available';
+      else if (bed.state === 'ASSIGNED') bedClass += ' bed-assigned';
+      else if (bed.state === 'OUT_OF_SERVICE') bedClass += ' bed-out';
+      var wardLabel = bed.ward ? ' <span style="font-size:9px;color:var(--text3);">('+bed.ward+')</span>' : '';
+      return '<div class="'+bedClass+'" style="border-color: '+(isMismatch ? 'var(--danger)' : stateConfig.color)+';">'+
+        (isMismatch ? '<div class="bed-mismatch">!</div>' : '')+
+        '<div><div class="bed-id">'+bed.id+wardLabel+'</div>'+
+        '<div style="font-size:10px; color:var(--text3);">'+bed.facility+'</div>'+
+        '<div class="bed-status" style="background:'+stateConfig.color+'20; color:'+stateConfig.color+';">'+stateConfig.label+'</div>'+
+        (bed.patientId ? '<div class="bed-patient">Patient: '+bed.patientId+'</div>' : '<div class="bed-patient" style="color:var(--text3);">— empty —</div>')+
+        '</div><div><div class="bed-iot">'+
+        '<span style="color:'+(isMismatch ? 'var(--danger)' : 'var(--acc)')+';">'+(isMismatch ? 'MISMATCH' : 'SYNC')+'</span>'+
+        (isMismatch ? ' - IoT says: '+displayConfig.label : '')+
+        '</div><div class="bed-last-change">Last change: '+timeStr+'</div></div></div>';
+    }).join('');
+    updateBedMetrics();
+  }
+
+  function updateBedMetrics() {
+    var sysOcc = beds.filter(function(b){ return b.state === 'OCCUPIED'; }).length;
+    var realOcc = beds.filter(function(b){ return b.displayState === 'OCCUPIED'; }).length;
+    var mismatch = countMismatches();
+    var sysEl = document.getElementById('sys-occupied');
+    var realEl = document.getElementById('real-occupied');
+    var mismatchEl = document.getElementById('mismatch-count');
+    var badgeEl = document.getElementById('mismatch-badge');
+    var timeEl = document.getElementById('mismatch-time');
+    if (sysEl) sysEl.textContent = sysOcc;
+    if (realEl) realEl.textContent = realOcc;
+    if (mismatchEl) { mismatchEl.textContent = mismatch; mismatchEl.style.color = mismatch > 0 ? 'var(--danger)' : 'var(--acc)'; }
+    if (badgeEl) { badgeEl.textContent = mismatch; badgeEl.style.color = mismatch > 0 ? 'var(--danger)' : 'var(--acc)'; }
+    if (timeEl) timeEl.textContent = 'Updated: ' + new Date().toLocaleTimeString();
+    var detailsEl = document.getElementById('mismatch-details');
+    if (detailsEl) {
+      if (mismatch > 0) {
+        var mismatches = beds.filter(function(b){ return hasMismatch(b); });
+        detailsEl.style.display = 'block';
+        detailsEl.innerHTML = mismatches.map(function(b) {
+          return '<div style="display:flex; justify-content:space-between; padding:2px 0; border-bottom:1px solid var(--line);">'+
+            '<span><b>'+b.id+'</b> ('+b.ward+')</span>'+
+            '<span>System: '+getStateConfig(b.state).label+' -> IoT: '+getStateConfig(b.displayState).label+'</span></div>';
+        }).join('');
+      } else { detailsEl.style.display = 'none'; }
+    }
+  }
+
+  function updateBedTimeline(message, bedId) {
+    bedTimeline.unshift({ timestamp: new Date(), message: message, bedId: bedId });
+    if (bedTimeline.length > 100) bedTimeline.pop();
+    renderBedTimeline();
+  }
+
+  function renderBedTimeline() {
+    var container = document.getElementById('timeline-entries');
+    var countEl = document.getElementById('timeline-count');
+    if (!container) return;
+    if (countEl) countEl.textContent = bedTimeline.length + ' events';
+    container.innerHTML = bedTimeline.slice(0, 30).map(function(entry) {
+      var time = entry.timestamp.toLocaleTimeString();
+      var bedInfo = entry.bedId ? ' ('+entry.bedId+')' : '';
+      return '<div style="display:flex; gap:10px; padding:4px 0; border-bottom:1px solid var(--line); font-size:12px;">'+
+        '<span style="color:var(--text3); min-width:70px;">'+time+'</span>'+
+        '<span style="color:var(--text);">'+entry.message+bedInfo+'</span></div>';
+    }).join('') || '<div style="color:var(--text3); padding:8px;">No events yet.</div>';
+  }
+
+  function simulateIoT(bedId, action) {
+    var bed = beds.find(function(b){ return b.id === bedId; });
+    if (!bed) { document.getElementById('iot-feedback').textContent = 'Bed not found'; return; }
+    var oldState = bed.displayState;
+    var newState = oldState;
+    var message = '';
+    switch(action) {
+      case 'discharge':
+        if (oldState === 'OCCUPIED') { newState = 'UNCLEAN'; bed.patientId = null; message = 'DISCHARGE: '+bed.id+' patient left, bed is now UNCLEAN'; }
+        else { message = bed.id+' is not occupied (current: '+getStateConfig(oldState).label+')'; }
+        break;
+      case 'clean':
+        if (oldState === 'UNCLEAN') { newState = 'CLEANING'; message = 'CLEANING: '+bed.id+' cleaning started'; }
+        else { message = bed.id+' is not UNCLEAN (current: '+getStateConfig(oldState).label+')'; }
+        break;
+      case 'available':
+        if (oldState === 'CLEANING' || oldState === 'UNCLEAN') { newState = 'AVAILABLE'; message = 'AVAILABLE: '+bed.id+' is now ready for assignment'; }
+        else { message = bed.id+' cannot be marked available (current: '+getStateConfig(oldState).label+')'; }
+        break;
+      case 'occupy':
+        if (oldState === 'AVAILABLE' || oldState === 'ASSIGNED') { newState = 'OCCUPIED'; bed.patientId = 'PT-'+String(Math.floor(1000 + Math.random() * 9000)); message = 'OCCUPY: '+bed.id+' now occupied by '+bed.patientId; }
+        else { message = bed.id+' cannot be occupied (current: '+getStateConfig(oldState).label+')'; }
+        break;
+      default: message = 'Unknown action';
+    }
+    if (newState !== oldState) {
+      bed.displayState = newState;
+      bed.lastChange = new Date();
+      bed.history.push({ state: newState, timestamp: new Date(), source: 'iot' });
+      updateBedTimeline(message, bed.id);
+      updateBedFlowFromAdmin();
+    }
+    document.getElementById('iot-feedback').textContent = message;
+    renderBedGrid();
+    updateBedDropdowns();
+    if (curTab === 'bed') renderContent();
+  }
+
+  function adminAction(bedId, action) {
+    var bed = beds.find(function(b){ return b.id === bedId; });
+    if (!bed) { document.getElementById('admin-feedback').textContent = 'Bed not found'; return; }
+    var newState = bed.state;
+    var message = '';
+    switch(action) {
+      case 'assign': newState = 'ASSIGNED'; bed.patientId = 'PT-'+String(Math.floor(1000 + Math.random() * 9000)); message = 'ASSIGNED: '+bed.id+' assigned to '+bed.patientId; break;
+      case 'clean': newState = 'CLEANING'; message = 'CLEANING: '+bed.id+' marked for cleaning (admin)'; break;
+      case 'available': newState = 'AVAILABLE'; bed.patientId = null; message = 'AVAILABLE: '+bed.id+' marked available (admin)'; break;
+      case 'occupy': newState = 'OCCUPIED'; bed.patientId = 'PT-'+String(Math.floor(1000 + Math.random() * 9000)); message = 'OCCUPIED: '+bed.id+' occupied (admin)'; break;
+      case 'reserve': newState = 'ASSIGNED'; message = 'RESERVED: '+bed.id+' reserved (admin)'; break;
+      case 'out': newState = 'OUT_OF_SERVICE'; bed.patientId = null; message = 'OUT OF SERVICE: '+bed.id+' taken out of service'; break;
+      default: message = 'Unknown action';
+    }
+    if (newState !== bed.state) {
+      bed.state = newState;
+      bed.lastChange = new Date();
+      bed.history.push({ state: newState, timestamp: new Date(), source: 'admin' });
+      bed.displayState = newState;
+      updateBedTimeline(message, bed.id);
+      updateBedFlowFromAdmin();
+    }
+    document.getElementById('admin-feedback').textContent = message;
+    renderBedGrid();
+    updateBedDropdowns();
+    if (curTab === 'bed') renderContent();
+  }
+
+  function reconcileMismatches() {
+    var mismatches = beds.filter(function(b){ return hasMismatch(b); });
+    if (mismatches.length === 0) { document.getElementById('mismatch-details').innerHTML = 'All beds are in sync!'; return; }
+    mismatches.forEach(function(bed) {
+      bed.state = bed.displayState;
+      bed.history.push({ state: bed.state, timestamp: new Date(), source: 'reconcile' });
+      updateBedTimeline('RECONCILED: '+bed.id+' system now matches IoT', bed.id);
+    });
+    renderBedGrid();
+    updateBedMetrics();
+    document.getElementById('mismatch-details').innerHTML = 'Reconciled '+mismatches.length+' mismatched beds';
+    updateBedFlowFromAdmin();
+    if (curTab === 'bed') renderContent();
+  }
+
+  function updateBedDropdowns() {
+    ['iot-bed-select', 'admin-bed-select'].forEach(function(id) {
+      var select = document.getElementById(id);
+      if (!select) return;
+      var currentVal = select.value;
+      select.innerHTML = beds.map(function(bed) {
+        var stateConfig = getStateConfig(bed.state);
+        var isMismatch = hasMismatch(bed);
+        return '<option value="'+bed.id+'">'+bed.id+' ('+bed.ward+') - '+stateConfig.label+(isMismatch ? ' MISMATCH' : '')+'</option>';
+      }).join('');
+      if (currentVal && beds.some(function(b){ return b.id === currentVal; })) { select.value = currentVal; }
+    });
+  }
+
+  function updateBedFlowFromAdmin() {
+    var facs = F();
+    facs.forEach(function(fac) {
+      var facBeds = beds.filter(function(b){ return b.facility === fac.n; });
+      var occupied = facBeds.filter(function(b){ return b.state === 'OCCUPIED' || b.state === 'ASSIGNED'; }).length;
+      var total = facBeds.length;
+      // We set free to static SYSTEM_AVAILABLE? No, we keep fac.free as computed for routing.
+      // But we override the display of "available" in metrics with the static value.
+      fac.free = total - occupied; // keep real for routing
+      var icuBeds = facBeds.filter(function(b){ return b.ward === 'ICU'; });
+      var icuOccupied = icuBeds.filter(function(b){ return b.state === 'OCCUPIED' || b.state === 'ASSIGNED'; }).length;
+      fac.icuFree = icuBeds.length - icuOccupied;
+    });
+    renderMetrics();
+  }
+
+  // ─── RENDER FUNCTIONS ───
+  function render() { renderMetrics(); renderContent(); }
+
+  function renderContent() {
+    var C=$('content');
+    if(curTab==='ops'){ C.innerHTML=opsHTML(); wireOps(); }
+    else if(curTab==='hosp'){ C.innerHTML=hospHTML(); renderHospCharts(); }
+    else if(curTab==='log'){ C.innerHTML=logHTML(); wireLog(); }
+    else if(curTab==='pid'){ C.innerHTML=pidHTML(); wirePID(); }
+    else if(curTab==='mev'){ C.innerHTML=mevHTML(); wireMev(); }
+    else if(curTab==='bed'){ C.innerHTML=bedHTML(); renderBedCharts(); }
+    else if(curTab==='bed-admin'){ C.innerHTML=bedAdminHTML(); initBedModule(); }
+    else if(curTab==='staff'){ C.innerHTML=staffHTML(); }
+    else if(curTab==='whatif'){ C.innerHTML=whatifHTML(); wireWhatif(); }
+    else if(curTab==='audit'){ C.innerHTML=auditHTML(); }
+    else if(curTab==='glb'){ C.innerHTML=glbHTML(); wireGlb(); }
+    else if(curTab==='crl'){ C.innerHTML=crlHTML(); wireCrl(); }
+  }
+
+  // ─── BED ADMIN HTML ─── (static available)
+  function bedAdminHTML() {
+    var totalDemand = getTotalDemand(); // 18
+    var occupied = getOccupiedCount();
+    var available = getAvailableCount(); // 10
+    var demandPct = Math.min(100, Math.round(totalDemand / TOTAL_CAPACITY * 100));
+    var occPct = Math.round(occupied / TOTAL_CAPACITY * 100);
+    var availPct = Math.round(available / TOTAL_CAPACITY * 100);
+    var demandColor = totalDemand > available ? 'var(--danger)' : 'var(--acc)';
+    
+    var wardSummary = wardData.map(function(w) {
+      var wardBeds = beds.filter(function(b){ return b.ward === w.name; });
+      var occ = wardBeds.filter(function(b){ return b.state === 'OCCUPIED' || b.state === 'ASSIGNED'; }).length;
+      var pct = w.beds ? Math.round(occ/w.beds*100) : 0;
+      var col = pct > 80 ? 'var(--danger)' : pct > 60 ? 'var(--warn)' : 'var(--acc)';
+      return '<div style="display:flex; justify-content:space-between; padding:4px 0; border-bottom:1px solid var(--line); font-size:12px;">'+
+        '<span><b>'+w.name+'</b> <span style="color:var(--text3);">('+w.beds+' beds)</span></span>'+
+        '<span>Demand: <b style="color:var(--warn);">'+w.demand+'</b> waiting</span>'+
+        '<span>Occupied: <b style="color:'+col+';">'+occ+'</b> / '+w.beds+'</span>'+
+        '<span style="color:'+col+';">'+pct+'%</span></div>';
+    }).join('');
+
+    return '<div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px;">'+
+      '<div class="card" style="border-color: '+(totalDemand > available ? 'var(--danger)' : 'var(--acc)')+';">'+
+        '<div class="card-head"><span class="card-title" style="color: '+(totalDemand > available ? 'var(--danger)' : 'var(--acc)')+';">DEMAND vs AVAILABLE BEDS</span>'+
+        '<span style="font-size:11px; color:var(--text3);">'+totalDemand+' patients waiting · '+available+' beds available (static)</span></div>'+
+        '<div class="card-body">'+
+          '<div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px;">'+
+            '<div style="text-align:center; padding:8px; background:var(--panel2); border-radius:6px; border:1px solid var(--line);">'+
+              '<div style="font-size:28px; font-weight:700; color:var(--warn);">'+totalDemand+'</div>'+
+              '<div style="font-size:10px; color:var(--text3); text-transform:uppercase;">Current Demand</div>'+
+            '</div>'+
+            '<div style="text-align:center; padding:8px; background:var(--panel2); border-radius:6px; border:1px solid var(--line);">'+
+              '<div style="font-size:28px; font-weight:700; color:'+(available >= totalDemand ? 'var(--acc)' : 'var(--danger)')+';">'+available+'</div>'+
+              '<div style="font-size:10px; color:var(--text3); text-transform:uppercase;">Available Beds (Fixed)</div>'+
+            '</div>'+
+          '</div>'+
+          '<div style="margin-bottom:8px;">'+
+            '<div style="display:flex; justify-content:space-between; font-size:11px; color:var(--text3);"><span>Demand</span><span>'+demandPct+'% of total beds</span></div>'+
+            '<div class="demand-bar"><div class="fill" style="width:'+demandPct+'%; background:'+demandColor+';"></div><div class="label">'+totalDemand+' patients waiting</div></div>'+
+          '</div>'+
+          '<div style="margin-bottom:8px;">'+
+            '<div style="display:flex; justify-content:space-between; font-size:11px; color:var(--text3);"><span>Occupied</span><span>'+occPct+'% of total beds</span></div>'+
+            '<div class="demand-bar"><div class="fill" style="width:'+occPct+'%; background:#dc2626;"></div><div class="label">'+occupied+' beds occupied</div></div>'+
+          '</div>'+
+          '<div>'+
+            '<div style="display:flex; justify-content:space-between; font-size:11px; color:var(--text3);"><span>Available (static)</span><span>'+availPct+'% of total beds</span></div>'+
+            '<div class="demand-bar"><div class="fill" style="width:'+availPct+'%; background:#2563eb;"></div><div class="label">'+available+' beds available (fixed)</div></div>'+
+          '</div>'+
+          (totalDemand > available ? '<div style="margin-top:10px; padding:8px; background:var(--dbg); border-radius:6px; font-size:12px; color:var(--danger);">⚠ Demand exceeds available beds! '+ (totalDemand - available) + ' more beds needed.</div>' : 
+          '<div style="margin-top:10px; padding:8px; background:var(--acc-bg); border-radius:6px; font-size:12px; color:var(--acc);">✓ Demand can be met with current available beds.</div>')+
+        '</div>'+
+      '</div>'+
+      '<div class="card" style="border-color: var(--danger);">'+
+        '<div class="card-head"><span class="card-title" style="color: var(--danger);">MISMATCH ALERT</span><span style="font-size:11px; color:var(--text3);" id="mismatch-time"></span></div>'+
+        '<div class="card-body">'+
+          '<div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px;">'+
+            '<div><div style="font-size:10px; color:var(--text3);">SYSTEM SHOWS</div><div style="font-size:28px; font-weight:700; color:var(--acc);" id="sys-occupied">0</div><div style="font-size:11px; color:var(--text2);">beds occupied</div></div>'+
+            '<div><div style="font-size:10px; color:var(--text3);">REALITY (IoT)</div><div style="font-size:28px; font-weight:700; color:var(--warn);" id="real-occupied">0</div><div style="font-size:11px; color:var(--text2);">beds occupied</div></div>'+
+            '<div><div style="font-size:10px; color:var(--text3);">MISMATCH</div><div style="font-size:28px; font-weight:700; color:var(--danger);" id="mismatch-count">0</div><div style="font-size:11px; color:var(--text2);">beds out of sync</div></div>'+
+          '</div>'+
+          '<div id="mismatch-details" style="margin-top:10px; padding:8px; background:var(--dbg); border-radius:6px; font-size:12px; color:var(--danger); display:none;"></div>'+
+          '<button class="btn btn-warn" id="resolve-mismatch" style="margin-top:10px; width:100%;">RECONCILE WITH REALITY</button>'+
+        '</div>'+
+      '</div>'+
+    '</div>'+
+    // IoT Simulator, Bed Grid, Admin + Timeline (same as before)
+    '<div class="card" style="margin-bottom:16px;">'+
+      '<div class="card-head"><span class="card-title">IoT BED SIMULATOR</span><span style="font-size:11px; color:var(--text3);">Simulate nurse pressing IoT button</span></div>'+
+      '<div class="card-body">'+
+        '<div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">'+
+          '<div><label class="lbl">Select Bed</label><select id="iot-bed-select" style="font-size:13px; padding:8px; width:100%;"></select></div>'+
+          '<div><label class="lbl">Action</label><select id="iot-action" style="font-size:13px; padding:8px; width:100%;">'+
+            '<option value="discharge">DISCHARGE</option>'+
+            '<option value="clean">MARK CLEANING</option>'+
+            '<option value="available">MARK AVAILABLE</option>'+
+            '<option value="occupy">OCCUPY</option>'+
+          '</select></div>'+
+        '</div>'+
+        '<button class="btn btn-solid" id="iot-simulate" style="width:100%; margin-top:10px;">SIMULATE IoT BUTTON PRESS</button>'+
+        '<div id="iot-feedback" style="margin-top:8px; font-size:12px; color:var(--text2);"></div>'+
+      '</div>'+
+    '</div>'+
+    '<div class="card" style="margin-bottom:16px;">'+
+      '<div class="card-head"><span class="card-title">BED GRID — REAL-TIME STATUS</span>'+
+        '<div style="display:flex; gap:12px; font-size:10px; align-items:center; flex-wrap:wrap;">'+
+          '<span><span style="display:inline-block; width:12px; height:12px; background:#dc2626; border-radius:2px;"></span> Occupied</span>'+
+          '<span><span style="display:inline-block; width:12px; height:12px; background:#d97706; border-radius:2px;"></span> Unclean</span>'+
+          '<span><span style="display:inline-block; width:12px; height:12px; background:#fbbf24; border-radius:2px;"></span> Cleaning</span>'+
+          '<span><span style="display:inline-block; width:12px; height:12px; background:#2563eb; border-radius:2px;"></span> Available</span>'+
+          '<span><span style="display:inline-block; width:12px; height:12px; background:#8b5cf6; border-radius:2px;"></span> Assigned</span>'+
+          '<span style="border-left:1px solid var(--line); padding-left:12px;">Mismatch: <span id="mismatch-badge" style="font-weight:700; color:var(--acc);">0</span></span>'+
+        '</div>'+
+      '</div>'+
+      '<div class="card-body">'+
+        '<div style="margin-bottom:12px; font-size:12px; color:var(--text3);">Ward summary:</div>'+
+        '<div style="margin-bottom:12px;">'+wardSummary+'</div>'+
+        '<div id="bed-grid" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(140px, 1fr)); gap:10px;"></div>'+
+      '</div>'+
+    '</div>'+
+    '<div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">'+
+      '<div class="card">'+
+        '<div class="card-head"><span class="card-title">BED ADMIN</span><span style="font-size:11px; color:var(--text3);">Manual override controls</span></div>'+
+        '<div class="card-body">'+
+          '<div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">'+
+            '<div><label class="lbl">Select Bed</label><select id="admin-bed-select" style="font-size:13px; padding:8px; width:100%;"></select></div>'+
+            '<div><label class="lbl">Action</label><select id="admin-action" style="font-size:13px; padding:8px; width:100%;">'+
+              '<option value="assign">ASSIGN PATIENT</option>'+
+              '<option value="clean">MARK FOR CLEANING</option>'+
+              '<option value="available">MARK AVAILABLE</option>'+
+              '<option value="occupy">MARK OCCUPIED</option>'+
+              '<option value="reserve">RESERVE</option>'+
+              '<option value="out">OUT OF SERVICE</option>'+
+            '</select></div>'+
+          '</div>'+
+          '<button class="btn btn-acc" id="admin-execute" style="width:100%; margin-top:10px;">EXECUTE ADMIN ACTION</button>'+
+          '<div id="admin-feedback" style="margin-top:8px; font-size:12px; color:var(--text2);"></div>'+
+        '</div>'+
+      '</div>'+
+      '<div class="card">'+
+        '<div class="card-head"><span class="card-title">STATE CHANGE TIMELINE</span><span style="font-size:11px; color:var(--text3);" id="timeline-count">0 events</span></div>'+
+        '<div class="card-body scrollable" id="timeline-container" style="max-height:300px;"><div id="timeline-entries"></div></div>'+
+      '</div>'+
+    '</div>';
+  }
+
+  function initBedModule() {
+    renderBedGrid();
+    updateBedDropdowns();
+    renderBedTimeline();
+    updateBedMetrics();
+    document.getElementById('iot-simulate').onclick = function() {
+      var bedId = document.getElementById('iot-bed-select').value;
+      var action = document.getElementById('iot-action').value;
+      simulateIoT(bedId, action);
+    };
+    document.getElementById('admin-execute').onclick = function() {
+      var bedId = document.getElementById('admin-bed-select').value;
+      var action = document.getElementById('admin-action').value;
+      adminAction(bedId, action);
+    };
+    document.getElementById('resolve-mismatch').onclick = function() {
+      reconcileMismatches();
+    };
+    if (window._bedInterval) clearInterval(window._bedInterval);
+    window._bedInterval = setInterval(function() {
+      var randomBeds = beds.filter(function(){ return Math.random() < 0.05; });
+      randomBeds.forEach(function(bed) {
+        if (bed.displayState === 'OCCUPIED' && Math.random() < 0.3) {
+          bed.displayState = 'UNCLEAN'; bed.patientId = null;
+          updateBedTimeline('AUTO-DISCHARGE: '+bed.id+' (IoT detected patient left)', bed.id);
+        } else if (bed.displayState === 'CLEANING' && Math.random() < 0.3) {
+          bed.displayState = 'AVAILABLE';
+          updateBedTimeline('AUTO-CLEAN: '+bed.id+' cleaning complete (IoT)', bed.id);
+        } else if (bed.displayState === 'AVAILABLE' && Math.random() < 0.2) {
+          bed.displayState = 'OCCUPIED';
+          bed.patientId = 'PT-'+String(Math.floor(1000 + Math.random() * 9000));
+          updateBedTimeline('AUTO-OCCUPY: '+bed.id+' (IoT detected new patient)', bed.id);
+        }
+        bed.lastChange = new Date();
+      });
+      if (randomBeds.length > 0) {
+        renderBedGrid();
+        updateBedMetrics();
+        updateBedDropdowns();
+        updateBedFlowFromAdmin();
+        if (curTab === 'bed') renderContent();
+      }
+    }, 30000);
+  }
+
+  // ─── BED FLOW PANEL ─── (static available)
+  function bedHTML() {
+    var active = patients.filter(function(p){ return p.stage < STAGES.length-1 && p.fac; });
+    var cleared = patients.filter(function(p){ return p.stage === STAGES.length-1; });
+    var totalBeds = beds.length;
+    var occupiedBeds = beds.filter(function(b){ return b.state === 'OCCUPIED' || b.state === 'ASSIGNED'; }).length;
+    var availableBeds = getAvailableCount(); // static 10
+    var uncleanBeds = beds.filter(function(b){ return b.state === 'UNCLEAN'; }).length;
+    var cleaningBeds = beds.filter(function(b){ return b.state === 'CLEANING'; }).length;
+    var outOfServiceBeds = beds.filter(function(b){ return b.state === 'OUT_OF_SERVICE'; }).length;
+    var avgLoS = 0, dischargeReady = 0, bottleneck = 0;
+    active.forEach(function(p){
+      var mins = Math.round(5 + p.stage * 18 + Math.random() * 30);
+      p._los = mins;
+      if(p.stage >= 3) dischargeReady++;
+      if(p.stage === 2) bottleneck++;
+    });
+    if(active.length) avgLoS = Math.round(active.reduce(function(a,p){ return a+(p._los||0); },0)/active.length);
+    var turnover = cleared.length > 0 ? Math.round(cleared.length/(cleared.length+active.length)*100) : 0;
+    var totalDemand = getTotalDemand();
+    var demandVsAvail = totalDemand > availableBeds ? '⚠ Demand exceeds available' : '✓ Demand can be met';
+    var kpis = '<div class="bf-kpi">'+
+      '<div class="bf-kpi-card"><div class="kl">TOTAL BEDS</div><div class="kv">'+totalBeds+'</div></div>'+
+      '<div class="bf-kpi-card"><div class="kl">OCCUPIED</div><div class="kv" style="color:#dc2626;">'+occupiedBeds+'</div></div>'+
+      '<div class="bf-kpi-card"><div class="kl">AVAILABLE (FIXED)</div><div class="kv" style="color:#2563eb;">'+availableBeds+'</div></div>'+
+      '<div class="bf-kpi-card"><div class="kl">DEMAND</div><div class="kv" style="color:'+(totalDemand>0?'var(--warn)':'var(--acc)')+';">'+totalDemand+'</div></div>'+
+      '<div class="bf-kpi-card"><div class="kl">DEMAND vs AVAILABLE</div><div class="kv" style="font-size:16px; color:'+(totalDemand > availableBeds ? 'var(--danger)' : 'var(--acc)')+';">'+demandVsAvail+'</div></div>'+
+      '<div class="bf-kpi-card"><div class="kl">AVG LENGTH OF STAY</div><div class="kv">'+avgLoS+' min</div></div>'+
+      '</div>';
+    var hdr = '<div class="bf-row" style="background:var(--bg2);border-color:var(--line2);font-size:11px;color:var(--text3);letter-spacing:.08em;text-transform:uppercase;">'+
+      '<span>Patient</span><span>Progress</span><span>LoS</span><span>Stage</span><span>Facility</span><span>Flag</span></div>';
+    var rows = active.slice(0,12).map(function(p){
+      var pct = Math.round(p.stage/(STAGES.length-1)*100);
+      var col = pct>=75?'var(--acc)':pct>=50?'var(--warn)':'var(--danger)';
+      var flag = p.stage>=3?'<span class="discharge-flag">READY</span>':'';
+      return '<div class="bf-row">'+
+        '<span class="pid-badge">'+p.id+'</span>'+
+        '<span><div class="bf-bar-wrap"><div class="bf-bar" style="width:'+pct+'%;background:'+col+'"></div></div></span>'+
+        '<span style="color:var(--text2)">'+(p._los||0)+'m</span>'+
+        '<span class="stage-badge">'+(p.stage===STAGES.length-1?S().cleared:STAGES[p.stage])+'</span>'+
+        '<span style="font-size:11px;color:var(--text2)">'+(p.fac||'—')+'</span>'+
+        '<span>'+flag+'</span></div>';
+    }).join('') || '<div class="empty-state">No active patients with assigned beds.</div>';
+    return '<div class="card"><div class="card-head"><span class="card-title">BED FLOW — TURNOVER AND DISCHARGE TRACKING</span>'+
+      '<span style="font-size:11px;color:var(--text3);">Updated from Bed Admin</span></div>'+
+      '<div class="card-body">'+kpis+hdr+rows+
+      '<div style="margin-top:14px;font-size:11px;color:var(--text3);">Tracks patient progression through care stages. Flags discharge-ready patients to reduce bottlenecks and improve bed turnover. Bed status synced with Bed Admin module.</div>'+
+      '</div></div>'+
+      '<div class="g2" style="margin-top:16px;">'+
+      '<div class="card"><div class="card-head"><span class="card-title">LENGTH OF STAY DISTRIBUTION</span></div><div class="card-body" style="height:220px;position:relative"><canvas id="chart-los"></canvas></div></div>'+
+      '<div class="card"><div class="card-head"><span class="card-title">BED STATUS BREAKDOWN</span></div><div class="card-body" style="height:220px;position:relative"><canvas id="chart-bed-breakdown"></canvas></div></div>'+
+      '</div>';
+  }
+
+  function renderBedCharts() {
+    if(!window.Chart) return;
+    var c1 = document.getElementById('chart-los');
+    if(c1) {
+      var bins = ['0-2h','2-4h','4-6h','6-8h','8-12h','12-24h','24h+'];
+      var counts = [3,8,12,6,4,2,1];
+      new Chart(c1, { type:'bar', data:{labels:bins, datasets:[{label:'Patients', data:counts, backgroundColor:['#bfdbfe','#93c5fd','#60a5fa','#3b82f6','#2563eb','#1d4ed8','#1e40af'], borderRadius:4}]}, options:{responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{x:{ticks:{color:'#64748b',font:{size:9}},grid:{display:false}}, y:{ticks:{color:'#64748b',font:{size:10}},grid:{color:'#e5e7eb'}}} }});
+    }
+    var c2 = document.getElementById('chart-bed-breakdown');
+    if(c2) {
+      var occupied = beds.filter(function(b){ return b.state === 'OCCUPIED' || b.state === 'ASSIGNED'; }).length;
+      var available = getAvailableCount(); // static
+      var unclean = beds.filter(function(b){ return b.state === 'UNCLEAN'; }).length;
+      var cleaning = beds.filter(function(b){ return b.state === 'CLEANING'; }).length;
+      var out = beds.filter(function(b){ return b.state === 'OUT_OF_SERVICE'; }).length;
+      new Chart(c2, { type:'doughnut', data:{labels:['Occupied','Available (fixed)','Unclean','Cleaning','Out of Service'], datasets:[{data:[occupied,available,unclean,cleaning,out], backgroundColor:['#dc2626','#2563eb','#d97706','#fbbf24','#94a3b8'], borderWidth:0, borderRadius:3}]}, options:{responsive:true, maintainAspectRatio:false, cutout:'60%', plugins:{legend:{position:'right', labels:{color:'#334155',font:{size:10},boxWidth:10,padding:6}}} }});
+    }
+  }
+
+  // ─── OTHER PANEL FUNCTIONS (unchanged) ───
+  function opsHTML() {
+    var triOpts = S().tri.map(function(t){ return '<option value="'+t[0]+'">'+t[0]+' — '+t[1]+'</option>'; }).join('');
+    var boardRows = patients.slice(0,10).map(function(p){
+      var sn = p.stage===STAGES.length-1?S().cleared:STAGES[p.stage];
+      var adv = p.facIdx!==null&&p.stage<STAGES.length-1?'<button class="btn btn-sm" data-adv="'+p.id+'">ADV</button>':'<span></span>';
+      return '<div class="board-row">'+
+        '<span style="width:9px;height:9px;background:'+tc(p.cat)+';box-shadow:0 0 6px '+tc(p.cat)+';display:block;border-radius:2px"></span>'+
+        '<span class="pid-badge">'+p.id+'</span>'+
+        '<span class="tcat" style="color:'+tc(p.cat)+'">'+p.cat+' '+tl(p.cat)+'</span>'+
+        '<span style="color:var(--text2)">'+p.inj+(p.icu?' <span style="color:var(--warn)">-ICU</span>':'')+'</span>'+
+        '<span class="stage-badge">'+sn+'</span>'+
+        '<span class="fac-name">'+(p.fac||'<span style="color:var(--danger)">UNROUTED</span>')+'</span>'+
+        adv+'</div>';
+    }).join('')||'<div class="empty-state">No casualties logged yet.</div>';
+    var msgRows = messages.slice(0,8).map(function(m){
+      if(m.agg){
+        var parts = Object.keys(m.cats).map(function(k){ return m.cats[k]+'x '+k; }).join(', ');
+        return '<div class="msg-row agg"><div class="msg-to">'+m.role+'</div><div class="msg-body">AGGREGATED: <b>'+m.n+' incoming</b> ('+parts+') -> '+m.fac+'</div><div class="msg-meta">'+m.t+' - '+m.ch+' - batched to reduce alert flood</div></div>';
+      }
+      return '<div class="msg-row"><div class="msg-to">'+m.role+'</div><div class="msg-body">'+m.cat+' -> '+m.fac+'</div><div class="msg-meta">'+m.t+' - '+m.ch+'</div></div>';
+    }).join('')||'<div class="empty-state">No alerts yet.</div>';
+    return '<div class="g3">'+
+      '<div class="card span2">'+
+        '<div class="card-head"><span class="card-title">CASUALTY INTAKE</span><button class="btn btn-sm btn-warn" id="surge-btn">INJECT SURGE (8)</button></div>'+
+        '<div class="card-body">'+
+          '<div class="form-row">'+
+            '<div><label class="lbl">Triage</label><select id="in-tri">'+triOpts+'</select></div>'+
+            '<div><label class="lbl">Primary injury</label><select id="in-inj"><option>Blast/trauma</option><option>Respiratory</option><option>Hemorrhage</option><option>Burns</option><option>Other</option></select></div>'+
+            '<div><label class="lbl">Distance</label><select id="in-dist"><option value="1">Near</option><option value="2">Mid</option><option value="3">Far</option></select></div>'+
+            '<div><label class="lbl">ICU required</label><select id="in-icu"><option value="0">No</option><option value="1">Yes</option></select></div>'+
+            '<button class="btn btn-acc" id="propose-btn" style="margin-top:19px">PROPOSE</button>'+
+          '</div>'+
+          '<div id="pw"></div><div class="result" id="res"></div>'+
+        '</div>'+
+      '</div>'+
+      '<div class="card"><div class="card-head"><span class="card-title">TRIAGE BOARD</span></div><div class="card-body scrollable">'+boardRows+'</div></div>'+
+      '<div class="card span2"><div class="card-head"><span class="card-title">MESSENGER FEED</span></div><div class="card-body scrollable-sm">'+msgRows+'</div></div>'+
+    '</div>';
+  }
+  function wireOps() {
+    if(!$('propose-btn')) return;
+    $('propose-btn').onclick = function(){ propose($('in-tri').value,$('in-inj').value,parseInt($('in-dist').value),$('in-icu').value==='1'); };
+    $('surge-btn').onclick = function(){ surge(8); };
+    $('content').querySelectorAll('[data-adv]').forEach(function(el){ el.onclick = function(){ advance(el.getAttribute('data-adv')); }; });
+    renderPending();
+  }
+
+  function hospHTML() {
+    var f = F()[0];
+    function res(label, free, total){
+      var pct = total?Math.round(free/total*100):0;
+      return '<div class="res"><div class="res-label">'+label+'</div><div class="res-nums" style="color:'+capC(pct)+'">'+free+' <span style="font-size:14px;color:var(--text3)">/ '+total+'</span></div><div class="res-bar"><div style="width:'+pct+'%;background:'+capC(pct)+';box-shadow:0 0 8px '+capC(pct)+'"></div></div></div>';
+    }
+    var wardRows = wardData.map(function(w) {
+      var wardBeds = beds.filter(function(b){ return b.ward === w.name; });
+      var occupied = wardBeds.filter(function(b){ return b.state === 'OCCUPIED' || b.state === 'ASSIGNED'; }).length;
+      var pct = w.beds ? Math.round(occupied/w.beds*100) : 0;
+      var col = pct > 80 ? 'var(--danger)' : pct > 60 ? 'var(--warn)' : 'var(--acc)';
+      return '<div style="display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px solid var(--line); font-size:13px;">'+
+        '<span><b>'+w.name+'</b></span>'+
+        '<span>Demand: <b style="color:var(--warn);">'+w.demand+'</b></span>'+
+        '<span>Occupied: <b style="color:'+col+';">'+occupied+'</b> / '+w.beds+'</span>'+
+        '<span style="color:'+col+';">'+pct+'%</span></div>';
+    }).join('');
+    var totalDemand = getTotalDemand();
+    var available = getAvailableCount(); // static
+    var roomRows = rooms.map(function(r){
+      var scol = r.status==='available'?'var(--acc)':r.status==='occupied'?'var(--warn)':r.status==='cleaning'?'var(--text2)':'var(--danger)';
+      var stat = r.status.toUpperCase();
+      return '<div style="display:flex;gap:10px;padding:8px 12px;border:1px solid var(--line);margin-bottom:4px;background:var(--panel2);font-size:12px;">'+
+        '<span style="font-weight:700;min-width:70px;">'+r.id+'</span>'+
+        '<span style="color:var(--text2);min-width:100px;">'+r.fac.split(' ')[0]+'</span>'+
+        '<span style="color:var(--text3);min-width:100px;">'+r.type+'</span>'+
+        '<span style="color:'+scol+';min-width:90px;font-weight:600;">'+stat+'</span>'+
+        '<span style="color:var(--text2);">'+(r.patient||'—')+'</span>'+
+        '<span style="color:var(--text3);">'+(r.eta?'ETA: '+r.eta:'')+'</span></div>';
+    }).join('');
+    return '<div class="g2"><div class="card span2"><div class="card-head"><span class="card-title">HOSPITAL MANAGEMENT — WARD OVERVIEW</span></div><div class="card-body">'+
+      '<div class="fac-card"><div class="fac-head"><div><div class="fac-name-big">'+f.n+'</div><div class="fac-type">'+f.t+'</div></div><div class="fac-role">-> '+f.role+'</div></div>'+
+      '<div class="fac-body">'+res('BEDS',f.free,f.beds)+res('ICU',f.icuFree,f.icu)+res('VENTILATORS',f.ventFree,f.vent)+'</div></div>'+
+      '<div style="margin-top:12px;"><b>Ward Details:</b> '+wardRows+'</div>'+
+      '<div style="margin-top:12px; padding:10px; background:'+(totalDemand > available ? 'var(--dbg)' : 'var(--acc-bg)')+'; border-radius:6px; font-size:13px; color:'+(totalDemand > available ? 'var(--danger)' : 'var(--acc)')+';">'+
+        'Total Demand: <b>'+totalDemand+'</b> patients waiting | Available Beds: <b>'+available+'</b> (fixed) | '+
+        (totalDemand > available ? '⚠ '+(totalDemand - available)+' more beds needed' : '✓ Demand can be met')+
+      '</div></div></div>'+
+      '<div class="card span2"><div class="card-head"><span class="card-title">ROOM AND OR TRACKING</span></div><div class="card-body scrollable">'+roomRows+'</div></div></div>';
+  }
+  function renderHospCharts(){}
+
+  function logHTML() {
+    var rows = IV().map(function(it){
+      var h = hts(it), st = ist(it);
+      var hs = h===Infinity?'∞':(h<10?h.toFixed(1):Math.round(h))+'h';
+      var redis = st!=='ok'?'<button class="btn btn-sm" data-redis="'+it.item+'">REDISTRIBUTE</button>':'';
+      return '<tr><td><span class="item-name">'+it.item+'</span></td><td>'+it.stock+' <span style="color:var(--text3)">'+it.unit+'</span></td><td class="burn">'+it.rate+'/h</td><td style="color:'+(st==='crit'?'var(--danger)':st==='low'?'var(--warn)':'var(--acc)')+'">'+hs+'</td><td><span class="pill '+st+'">'+st.toUpperCase()+'</span></td><td>'+redis+'</td></tr>';
+    }).join('');
+    return '<div class="card"><div class="card-head"><span class="card-title">LOGISTICS</span></div><div class="card-body"><table class="led-table"><thead><tr><th>Item</th><th>Stock</th><th>Burn rate</th><th>Runs out</th><th>Status</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div></div>';
+  }
+  function wireLog(){ $('content').querySelectorAll('[data-redis]').forEach(function(el){ el.onclick = function(){ redistribute(el.getAttribute('data-redis')); }; }); }
+
+  function pidHTML(){
+    var latest = patients[0];
+    var card = latest ? '<div class="id-card"><div class="qr-zone"><div class="qrbox" id="qrbox"></div></div><div class="id-meta"><div class="id-big">'+latest.id+'</div><div class="id-grid"><span class="id-key">Triage</span><span class="id-val" style="color:'+tc(latest.cat)+'">'+latest.cat+' '+tl(latest.cat)+'</span><span class="id-key">Injury</span><span class="id-val">'+latest.inj+'</span><span class="id-key">Facility</span><span class="id-val">'+(latest.fac||'UNROUTED')+'</span><span class="id-key">ICU</span><span class="id-val">'+(latest.icu?'YES':'No')+'</span><span class="id-key">Status</span><span class="id-val">'+(latest.stage===STAGES.length-1?S().cleared:STAGES[latest.stage])+'</span></div></div></div>' : '<div class="empty-state">No patients logged.</div>';
+    return '<div class="g2"><div class="card"><div class="card-head"><span class="card-title">DIGITAL PATIENT ID</span></div><div class="card-body">'+card+'</div></div></div>';
+  }
+  function wirePID(){
+    var box = document.getElementById('qrbox');
+    if(box && window.QRCode){
+      try {
+        var qrData = box.getAttribute('data-qr') || JSON.stringify({id:'PT-0001', tri:'T1', inj:'Trauma', fac:'Klinikum Mitte', status:'In treatment'});
+        new QRCode(box, {text: decodeURIComponent(qrData), width:110, height:110, correctLevel: QRCode.CorrectLevel.M});
+      } catch(e) {}
+    }
+  }
+
+  // ─── MEDEVAC (unchanged) ───
+  var mevMap = null, mevMarkers = [], mevRoutes = [];
+  var medevacUnits = [
+    {id:'MEV-01',type:'Ground',status:'Available',eta:null,from:null,to:null},
+    {id:'MEV-02',type:'Ground',status:'Available',eta:null,from:null,to:null},
+    {id:'MEV-03',type:'Heli',status:'Available',eta:null,from:null,to:null}
+  ];
+  function mevHTML() {
+    var units = medevacUnits.map(function(u){
+      var st = u.status==='En route'?'color:var(--warn)':u.status==='Available'?'color:var(--acc)':'color:var(--text3)';
+      return '<div class="mev-unit"><span><b>'+u.id+'</b> - '+u.type+'</span><span style="'+st+'">'+u.status+'</span>'+(u.eta?'<span class="eta">ETA '+u.eta+'</span>':'')+(u.to?'<span style="font-size:11px;color:var(--text2)">-> '+u.to+'</span>':'')+'</div>';
+    }).join('');
+    return '<div class="g21">'+
+      '<div class="card"><div class="card-head"><span class="card-title">MEDEVAC ROUTE MAP</span></div><div class="card-body"><div id="mev-map" style="height:400px;"></div>'+
+      '<div class="mev-legend"><span><span style="width:12px;height:3px;background:var(--acc);display:block;"></span> Ground route</span><span><span style="width:12px;height:3px;background:var(--warn);display:block;border-style:dashed;"></span> Air route</span><span><span style="width:8px;height:8px;border-radius:50%;background:var(--acc);display:block;box-shadow:0 0 6px var(--acc);"></span> Facility</span></div>'+
+      '</div></div>'+
+      '<div class="card"><div class="card-head"><span class="card-title">TRANSPORT UNITS</span></div><div class="card-body">'+units+
+      '<div style="margin-top:12px;"><button class="btn btn-sm btn-acc" id="mev-dispatch">DISPATCH NEAREST</button></div></div></div></div>';
+  }
+  function wireMev() {
+    if(!window.L){ 
+      var mapDiv = document.getElementById('mev-map');
+      if(mapDiv) mapDiv.innerHTML = '<div style="padding:20px;color:var(--text3);">Map unavailable offline.</div>';
+      return;
+    }
+    if(!mevMap){
+      mevMap = L.map('mev-map', {attributionControl:false, zoomControl:true});
+      L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {maxZoom:18, subdomains:'abcd'}).addTo(mevMap);
+    } else { mevMap.invalidateSize(); }
+    var ctr = mode==='mil'?[52.40,13.30]:[52.52,13.405];
+    mevMap.setView(ctr, mode==='mil'?11:12);
+    mevMarkers.forEach(function(m){ mevMap.removeLayer(m); }); mevMarkers = [];
+    mevRoutes.forEach(function(r){ mevMap.removeLayer(r); }); mevRoutes = [];
+    var list = F();
+    list.forEach(function(f,i){
+      var pct = f.beds?Math.round(f.free/f.beds*100):0;
+      var col = pct>40?'#2563eb':pct>15?'#d97706':'#dc2626';
+      var m = L.circleMarker([f.lat,f.lng], {radius:10, fillColor:col, color:'#fff', weight:2, fillOpacity:0.9})
+        .bindPopup('<b>'+f.n+'</b><br>'+f.t+'<br>'+f.free+'/'+f.beds+' beds');
+      m.addTo(mevMap); mevMarkers.push(m);
+      if(i>0){
+        var route = L.polyline([[list[0].lat,list[0].lng],[f.lat,f.lng]], {color:i===list.length-1?'#d97706':'#2563eb', weight:2, dashArray:i===list.length-1?'8,6':'', opacity:0.6});
+        route.addTo(mevMap); mevRoutes.push(route);
+      }
+    });
+    var db = document.getElementById('mev-dispatch');
+    if(db) db.onclick = function(){
+      var avail = medevacUnits.find(function(u){ return u.status==='Available'; });
+      if(!avail){ db.textContent = 'ALL DEPLOYED'; return; }
+      var tgt = list.find(function(f){ return f.free>0; });
+      if(!tgt){ db.textContent = 'NO CAPACITY'; return; }
+      avail.status = 'En route';
+      avail.eta = Math.round(4+Math.random()*12)+'min';
+      avail.to = tgt.n;
+      setTimeout(function(){ avail.status = 'Available'; avail.eta = null; avail.to = null; if(curTab==='mev') render(); },15000);
+      render();
+    };
+  }
+
+  // ─── STAFF (unchanged) ───
+  function staffHTML() {
+    var rows = staff.map(function(s){
+      var pct = Math.round(s.pts/s.max*100);
+      var cls = s.pts>=s.max?'danger':s.pts>s.max*0.7?'warn':'';
+      var flag = s.pts>=s.max?'OVERLOADED':s.pts>s.max*0.7?'FATIGUE RISK':'OK';
+      return '<div class="fac-card"><div class="fac-head"><div><div class="fac-name-big">'+s.name+'</div><div class="fac-type">'+s.role+' - '+s.spec+'</div></div><div class="fac-role" style="color:var(--'+(cls||'acc')+')">'+flag+'</div></div><div style="padding:12px 14px"><div style="display:flex;justify-content:space-between;font-size:11px"><span>Patients</span><span style="color:var(--text2)">'+s.pts+' / '+s.max+'</span></div><div class="res-bar"><div style="width:'+pct+'%;background:'+(cls?'var(--'+cls+')':'var(--acc)')+'"></div></div></div></div>';
+    }).join('');
+    return '<div class="g2"><div class="card span2"><div class="card-head"><span class="card-title">STAFF FATIGUE</span></div><div class="card-body">'+rows+'</div></div></div>';
+  }
+
+  // ─── WHAT-IF (unchanged) ───
+  function whatifHTML() {
+    return '<div class="g2"><div class="card span2"><div class="card-head"><span class="card-title">WHAT-IF SIMULATOR</span></div><div class="card-body"><div class="form-row"><div><label class="lbl">Scenario</label><select id="wi-type"><option value="surge">Additional casualties</option><option value="offline">Facility offline</option></select></div><div><label class="lbl">Parameter</label><select id="wi-param"><option value="8">8 casualties</option><option value="16">16 casualties</option></select></div><button class="btn btn-acc" id="wi-run" style="margin-top:19px">RUN</button></div><div id="wi-result" style="margin-top:16px"></div></div></div></div>';
+  }
+  function wireWhatif(){
+    document.getElementById('wi-run').onclick = function(){
+      var n = parseInt(document.getElementById('wi-param').value);
+      var f = 0;
+      for(var i=0;i<n;i++){
+        var cats=['T1','T2','T2','T3']; var cat=cats[i%4];
+        var idx=bestF(cat,1,cat==='T1',-1);
+        if(idx===null) f++;
+        else { var list=F(); list[idx].free--; if(cat==='T1'&&list[idx].icuFree>0) list[idx].icuFree--; }
+      }
+      var list=F(), tb=0, tf=0; list.forEach(function(f){ tb+=f.beds; tf+=f.free; });
+      var cp = tb?Math.round(tf/tb*100):0;
+      document.getElementById('wi-result').innerHTML = '<div class="card" style="border-color:var(--warn)"><div class="card-body"><b>'+n+' casualties</b> - '+((n-f)+' routed')+' - '+f+' escalated<br>Remaining capacity: '+cp+'%</div></div>';
+    };
+  }
+
+  // ─── AUDIT LOG (unchanged) ───
+  function auditHTML() {
+    var rows = auditLog.length ? auditLog.slice(0,20).map(function(a){
+      return '<div style="display:flex;gap:10px;padding:4px 0;border-bottom:1px solid var(--line);font-size:12px;"><span style="color:var(--text3);min-width:70px;">'+a.t+'</span><span style="font-weight:700;color:var(--acc);min-width:70px;">'+a.action+'</span><span style="color:var(--text);">'+a.detail+'</span></div>';
+    }).join('') : '<div class="empty-state">No actions logged yet.</div>';
+    return '<div class="card"><div class="card-head"><span class="card-title">AUDIT LOG</span></div><div class="card-body scrollable">'+rows+'</div></div>';
+  }
+
+  // ─── PROCUREMENT (unchanged) ───
+  var suppliers = [
+    {name:'MedTech GmbH',country:'Germany',alliance:'NATO',items:{blood:{price:42,stock:500,lead:4},kits:{price:180,stock:120,lead:6},iv:{price:8,stock:2000,lead:3}},reliability:4.8,ship:12},
+    {name:'Baxter Intl',country:'USA',alliance:'NATO',items:{blood:{price:55,stock:800,lead:18},kits:{price:210,stock:200,lead:16},iv:{price:6,stock:5000,lead:14}},reliability:4.5,ship:35}
+  ];
+  var orders = [], orderSeq = 1;
+  function glbHTML() {
+    var rows = '<table class="led-table"><thead><tr><th>Supplier</th><th>Country</th><th>Blood (€)</th><th>Kits (€)</th><th>IV (€)</th><th>Lead</th><th>Reliability</th></tr></thead><tbody>';
+    suppliers.forEach(function(s){
+      rows += '<tr><td><b>'+s.name+'</b></td><td>'+s.country+'</td><td>€'+ (s.items.blood? s.items.blood.price : '-') +'</td><td>€'+ (s.items.kits? s.items.kits.price : '-') +'</td><td>€'+ (s.items.iv? s.items.iv.price : '-') +'</td><td>'+ (s.items.blood? s.items.blood.lead : '-') +'h</td><td>'+s.reliability+'/5</td></tr>';
+    });
+    rows += '</tbody></table>';
+    return '<div class="card"><div class="card-head"><span class="card-title">PROCUREMENT</span></div><div class="card-body">'+rows+'</div></div>';
+  }
+  function wireGlb(){}
+
+  // ─── CRL ASSETS ───
+  var crlFilter = '';
+  var civilAssets = [];
+  function generateCrlAssets() {
+    for(var i=0;i<10;i++){
+      civilAssets.push({
+        id: 'A'+(100+i),
+        type: 'aircraft',
+        op: 'Lufthansa',
+        status: Math.random()>0.3?'active':'reserve',
+        from: 'FRA',
+        to: 'LHR',
+        lat: 50 + Math.random()*2,
+        lng: 8 + Math.random()*2,
+        availKg: Math.round(2000+Math.random()*8000),
+        capKg: 10000,
+        agree: 'NATO'
+      });
+    }
+    for(var j=0;j<5;j++){
+      civilAssets.push({
+        id: 'S'+(200+j),
+        type: 'ship',
+        op: 'Maersk',
+        status: Math.random()>0.2?'active':'reserve',
+        from: 'Hamburg',
+        to: 'Rotterdam',
+        lat: 54 + Math.random()*1,
+        lng: 9 + Math.random()*1,
+        availKg: Math.round(5000+Math.random()*20000),
+        capKg: 30000,
+        agree: 'Commercial'
+      });
+    }
+  }
+  generateCrlAssets();
+
+  function crlHTML() {
+    var activeCount = civilAssets.filter(function(a){ return a.status==='active'; }).length;
+    var totalAvail = civilAssets.reduce(function(s,a){ return s+a.availKg; },0);
+    var aircraft = civilAssets.filter(function(a){ return a.type==='aircraft'; });
+    var ships = civilAssets.filter(function(a){ return a.type==='ship'; });
+    var filtered = civilAssets;
+    if(crlFilter){
+      var q = crlFilter.toLowerCase();
+      filtered = civilAssets.filter(function(a){ return a.op.toLowerCase().indexOf(q)>=0 || a.id.toLowerCase().indexOf(q)>=0; });
+    }
+    var assetRows = filtered.slice(0,20).map(function(a){
+      var icon = a.type==='aircraft'?'✈':'🚢';
+      var scol = a.status==='active'?'var(--acc)':a.status==='reserve'?'var(--warn)':'var(--text3)';
+      return '<div style="display:grid;grid-template-columns:24px 90px 1fr 100px 70px 80px auto;align-items:center;gap:10px;padding:8px 12px;border:1px solid var(--line);margin-bottom:4px;background:var(--panel2);font-size:12.5px">'+
+        '<span style="font-size:16px;text-align:center">'+icon+'</span>'+
+        '<span class="pid-badge">'+a.id+'</span>'+
+        '<span style="font-weight:700">'+a.op+' <span style="color:var(--text3);font-weight:400;font-size:11px">'+a.from+' -> '+a.to+'</span></span>'+
+        '<span style="color:'+scol+';font-size:11px">'+a.status.toUpperCase()+' · '+Math.round(a.availKg/1000)+'t</span>'+
+        '<span class="pill ok" style="font-size:9px">'+a.agree+'</span>'+
+        '<span style="font-size:10px;color:var(--text3)">ready</span>'+
+        '<button class="btn btn-sm btn-acc" data-task="'+a.id+'" style="white-space:nowrap">TASK</button>'+
+        '</div>';
+    }).join('') || '<div class="empty-state">No assets match.</div>';
+    return '<div class="g2">'+
+      '<div class="card span2"><div class="card-head"><span class="card-title">CIVIL RESERVE LOGISTICS — ASSET REGISTRY</span>'+
+      '<span style="font-size:11px;color:var(--text3)">'+aircraft.length+' aircraft · '+ships.length+' ships · '+activeCount+' active · '+Math.round(totalAvail/1000)+'t available</span></div>'+
+      '<div style="padding:10px 16px;border-bottom:1px solid var(--line);display:flex;gap:10px;align-items:center">'+
+      '<input type="text" id="crl-search" value="'+crlFilter+'" placeholder="Search..." style="flex:1;padding:8px 12px;font-size:12px;background:var(--bg);color:var(--text);border:1px solid var(--line2)">'+
+      '<button class="btn btn-sm btn-acc" id="crl-search-go">SEARCH</button>'+
+      (crlFilter?'<button class="btn btn-sm" id="crl-clear">CLEAR</button>':'')+
+      '</div>'+
+      '<div class="card-body scrollable">'+assetRows+'</div></div>'+
+      '<div class="card span2"><div class="card-head"><span class="card-title">CRL PERFORMANCE</span></div>'+
+      '<div class="card-body"><div class="metrics" style="border:none;margin:-8px -4px 0">'+
+      mc('ASSETS ACTIVE',activeCount,'')+mc('CAPACITY AVAIL',Math.round(totalAvail/1000)+'t','')+
+      '</div></div></div></div>';
+  }
+  function wireCrl() {
+    var searchInput = document.getElementById('crl-search');
+    if(searchInput){
+      searchInput.onkeydown = function(e){ if(e.key==='Enter'){ crlFilter = this.value.trim(); render(); } };
+    }
+    var goBtn = document.getElementById('crl-search-go');
+    if(goBtn) goBtn.onclick = function(){ crlFilter = document.getElementById('crl-search').value.trim(); render(); };
+    var clrBtn = document.getElementById('crl-clear');
+    if(clrBtn) clrBtn.onclick = function(){ crlFilter = ''; render(); };
+    document.querySelectorAll('[data-task]').forEach(function(el){
+      el.onclick = function(){
+        logA('CRL-TASK','Tasked asset '+el.getAttribute('data-task'));
+        render();
+      };
+    });
+  }
+
+  // ─── MODE FUNCTIONS ───
+  function applyMode(){
+    $('sb-id').textContent = S().sbid;
+    $('sb-up').textContent = S().sbup;
+    $('sb-flow').textContent = S().flow;
+    $('mode-sub').textContent = S().sub;
+    document.documentElement.setAttribute('data-mode', mode==='mil'?'mil':'civ');
+  }
+  function initMode(){
+    S()._facs = JSON.parse(JSON.stringify(S().facs));
+    S()._inv = JSON.parse(JSON.stringify(S().inv));
+    patients = [];
+    routeTimes = [];
+    messages = [];
+    suppressed = 0;
+    seq = 1;
+    pending = null;
+    surgeBatch = 0;
+    initStaffAndRooms();
+    generateBeds();
+    applyMode();
+    render();
+  }
+
+  function setTab(t){
+    curTab = t;
+    document.querySelectorAll('.tab-btn').forEach(function(b){ b.classList.toggle('on', b.getAttribute('data-tab')===t); });
+    render();
+  }
+  document.querySelectorAll('.tab-btn').forEach(function(b){ b.onclick = function(){ setTab(b.getAttribute('data-tab')); }; });
+
+  $('btn-civ').onclick = function(){ mode='civ'; this.classList.add('on'); $('btn-mil').classList.remove('on'); initMode(); };
+  $('btn-mil').onclick = function(){ mode='mil'; this.classList.add('on'); $('btn-civ').classList.remove('on'); initMode(); };
+
+  function clock(){ $('sb-clock').textContent = new Date().toTimeString().slice(0,8)+' Z'; }
+  setInterval(clock,1000); clock();
+
+  // ─── WALL MODE (static available) ───
+  $('wall-btn').onclick = function(){
+    $('wall-overlay').style.display = 'block';
+    updateWall();
+    if(window._wallInterval) clearInterval(window._wallInterval);
+    window._wallInterval = setInterval(updateWall, 10000);
+  };
+  $('wall-close').onclick = function(){
+    $('wall-overlay').style.display = 'none';
+    if(window._wallInterval) clearInterval(window._wallInterval);
+  };
+  function updateWall(){
+    var list=F(), tb=0, tf=0, it=0, iff=0;
+    list.forEach(function(f){ tb+=f.beds; tf+=f.free; it+=f.icu; iff+=f.icuFree; });
+    var active = patients.filter(function(p){ return p.stage<STAGES.length-1; });
+    var rs = resScore();
+    var cp = tb?Math.round(tf/tb*100):0;
+    var bedMismatch = countMismatches();
+    var totalDemand = getTotalDemand();
+    var available = getAvailableCount();
+    $('wall-content').innerHTML = '<div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px;">'+
+      '<div style="background:var(--panel);border:1px solid var(--line);padding:16px;"><div style="font-size:10px;color:var(--text3);text-transform:uppercase;">RESILIENCE</div><div style="font-size:32px;font-weight:700;color:'+(rs>=80?'var(--acc)':rs>=50?'var(--warn)':'var(--danger)')+'">'+rs+'/100</div></div>'+
+      '<div style="background:var(--panel);border:1px solid var(--line);padding:16px;"><div style="font-size:10px;color:var(--text3);text-transform:uppercase;">CASUALTIES</div><div style="font-size:32px;font-weight:700;color:var(--acc)">'+active.length+'</div></div>'+
+      '<div style="background:var(--panel);border:1px solid var(--line);padding:16px;"><div style="font-size:10px;color:var(--text3);text-transform:uppercase;">BED CAPACITY</div><div style="font-size:32px;font-weight:700;color:'+(cp>40?'var(--acc)':cp>15?'var(--warn)':'var(--danger)')+'">'+cp+'%</div></div>'+
+      '<div style="background:var(--panel);border:1px solid var(--line);padding:16px;"><div style="font-size:10px;color:var(--text3);text-transform:uppercase;">DEMAND vs AVAILABLE</div><div style="font-size:24px;font-weight:700;color:'+(totalDemand > available ? 'var(--danger)' : 'var(--acc)')+';">'+totalDemand+' waiting / '+available+' available (fixed)</div></div>'+
+      '<div style="background:var(--panel);border:1px solid var(--line);padding:16px;"><div style="font-size:10px;color:var(--text3);text-transform:uppercase;">BED MISMATCH</div><div style="font-size:32px;font-weight:700;color:'+(bedMismatch>0?'var(--danger)':'var(--acc)')+'">'+bedMismatch+'</div></div>'+
+      '</div>';
+    $('wall-updated').textContent = 'Updated: '+nowt()+' Z';
+  }
+
+  // ─── PDF EXPORT (unchanged) ───
+  $('pdf-btn').onclick = function(){
+    var w = window.open('','','width=900,height=700');
+    var list=F(), tb=0, tf=0; list.forEach(function(f){ tb+=f.beds; tf+=f.free; });
+    var cp = tb?Math.round(tf/tb*100):0;
+    var active = patients.filter(function(p){ return p.stage<STAGES.length-1; });
+    var html = '<html><head><title>MEDCOM-X Report</title><style>body{font-family:Inter,sans-serif;font-size:13px;padding:32px}h1{font-size:20px;border-bottom:2px solid #2563eb}h2{font-size:16px;margin-top:24px}table{width:100%;border-collapse:collapse;margin:12px 0}th,td{border:1px solid #ccc;padding:6px 10px;text-align:left}th{background:#f8f9fb}</style></head><body>';
+    html += '<h1>MEDCOM-X // SITUATION REPORT</h1><p><b>Generated:</b> '+new Date().toISOString()+' - <b>Mode:</b> '+mode.toUpperCase()+'</p>';
+    html += '<h2>CAPACITY</h2><table><tr><th>Facility</th><th>Beds</th><th>ICU</th></tr>';
+    list.forEach(function(f){ html += '<tr><td><b>'+f.n+'</b></td><td>'+f.free+'/'+f.beds+'</td><td>'+f.icuFree+'/'+f.icu+'</td></tr>'; });
+    html += '</table><h2>PATIENTS ('+active.length+')</h2><table><tr><th>ID</th><th>Triage</th><th>Status</th><th>Facility</th></tr>';
+    active.slice(0,20).forEach(function(p){ html += '<tr><td>'+p.id+'</td><td>'+p.cat+'</td><td>'+(p.stage===STAGES.length-1?S().cleared:STAGES[p.stage])+'</td><td>'+(p.fac||'UNROUTED')+'</td></tr>'; });
+    html += '</table></body></html>';
+    w.document.write(html); w.document.close();
+    setTimeout(function(){ w.print(); },500);
+  };
+
+  // ─── INIT ───
+  window.addEventListener('load', function(){
+    var p = new URLSearchParams(location.search).get('mode');
+    if(p==='mil'){ mode='mil'; document.documentElement.setAttribute('data-mode','mil'); $('btn-mil').classList.add('on'); $('btn-civ').classList.remove('on'); }
+    initMode();
+    setTimeout(function(){
+      if(curTab==='pid') wirePID();
+    }, 500);
+  });
+
+})();
+</script>
+</body>
+</html>
